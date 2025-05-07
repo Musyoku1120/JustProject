@@ -16,7 +16,6 @@ type MessageHead struct {
 	Length uint32 // 消息体长度（不含头）
 }
 
-// Encode 将消息头编码为字节流
 func (r *MessageHead) Encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.LittleEndian, r.Length); err != nil {
@@ -25,7 +24,6 @@ func (r *MessageHead) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Decode 从字节流解析消息头
 func (r *MessageHead) Decode(data []byte) error {
 	if len(data) < MsgHeadSize {
 		return errors.New("message header too short")
@@ -76,19 +74,16 @@ func ParseMessage(data []byte) (*Message, error) {
 		return nil, errors.New("incomplete header")
 	}
 
-	// 解析头部
 	head := NewMessageHead(data[:MsgHeadSize])
 	if head == nil {
 		return nil, errors.New("parse header failed: %w")
 	}
 
-	// 验证体数据完整性
 	totalExpected := MsgHeadSize + int(head.Length)
 	if len(data) < totalExpected {
 		return nil, errors.New("incomplete body")
 	}
 
-	// 提取消息体
 	body := make([]byte, head.Length)
 	copy(body, data[MsgHeadSize:totalExpected])
 

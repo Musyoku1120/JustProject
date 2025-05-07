@@ -11,9 +11,12 @@ import (
 
 type tcpMsqQueue struct {
 	msgQueue
-	conn      net.Conn
-	listener  net.Listener
-	waitGroup sync.WaitGroup
+	conn       net.Conn
+	listener   net.Listener
+	waitGroup  sync.WaitGroup
+	netType    string
+	address    string
+	connecting int32
 }
 
 func (r *tcpMsqQueue) Stop() {
@@ -113,6 +116,7 @@ func (r *tcpMsqQueue) write() {
 	tick.Stop()
 }
 
+// 监听来自远端的连接
 func (r *tcpMsqQueue) listen() {
 	for r.stopFlag == 0 {
 		conn, err := r.listener.Accept()
@@ -136,6 +140,61 @@ func (r *tcpMsqQueue) listen() {
 		}
 	}
 	r.Stop()
+}
+
+// 主动向对端发起连接
+func (r *tcpMsqQueue) connect() {
+	conn, err := net.DialTimeout(r.netType, r.address, time.Second)
+	if err != nil {
+		fmt.Printf("tcpMsqQueue connect err:%v", err)
+		atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
+		r.Stop()
+		return
+	}
+	r.conn = conn
+	atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
+	AsyncDo(func() {
+		fmt.Printf("tcp[%v] read start", r.uid)
+		r.read()
+		fmt.Printf("tcp[%v] read end", r.uid)
+	})
+	AsyncDo(func() {
+		fmt.Printf("tcp[%v] write start", r.uid)
+		r.write()
+		fmt.Printf("tcp[%v] write end", r.uid)
+	})
+}
+
+func (r *tcpMsqQueue) Reconnect(offset int) {
+	if r.conn != nil {
+		return
+	}
+	if !atomic.CompareAndSwapInt32(&r.connecting, 0, 1) {
+		return
+	}
+	AsyncDo(func() {
+		r.waitGroup.Wait()
+		if offset > 0 {
+			time.Sleep(time.Millisecond * time.Duration(offset))
+		}
+		r.stopFlag = 0
+		r.connect()
+	})
+}
+
+func newTcpConnect(conn net.Conn, netType string, address string) *tcpMsqQueue {
+	mq := &tcpMsqQueue{
+		msgQueue: msgQueue{
+			uid:          atomic.AddUint32(&msgQueUId, 1),
+			stopFlag:     0,
+			writeChannel: make(chan *Message, 64),
+		},
+		conn:      conn,
+		waitGroup: sync.WaitGroup{},
+		netType:   netType,
+		address:   address,
+	}
+	return mq
 }
 
 func newTcpAccept(conn net.Conn) *tcpMsqQueue {
