@@ -6,6 +6,7 @@ import (
 
 var waitAll = &sync.WaitGroup{} // 等待所有goroutine
 var stopChanForGo = make(chan struct{})
+var TimeStamp int64
 
 var (
 	goCount int32 // goroutine数量

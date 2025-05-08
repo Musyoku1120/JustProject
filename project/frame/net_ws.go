@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-type wsMsgQueue struct {
-	msgQueue
+type wsMsgQue struct {
+	msgQue
 	conn       *websocket.Conn
 	waitGroup  sync.WaitGroup
 	requestUrl string
@@ -18,13 +18,13 @@ type wsMsgQueue struct {
 	connecting int32
 }
 
-func (r *wsMsgQueue) Stop() {
+func (r *wsMsgQue) Stop() {
 	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
 		r.baseStop()
 	}
 }
 
-func (r *wsMsgQueue) read() {
+func (r *wsMsgQue) read() {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Printf("msgQue read panic id:%v err:%v", r.uid, err)
@@ -38,11 +38,14 @@ func (r *wsMsgQueue) read() {
 			fmt.Printf("read message err:%v", err)
 			break
 		}
-		r.processMsg(&Message{Body: data})
+		if !r.processMsg(&Message{Body: data}) {
+			break
+		}
+		r.lastTick = TimeStamp
 	}
 }
 
-func (r *wsMsgQueue) write() {
+func (r *wsMsgQue) write() {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Printf("msgQue write panic id:%v err:%v", r.uid, err)
@@ -60,8 +63,11 @@ func (r *wsMsgQueue) write() {
 			select {
 			case msg = <-r.writeChannel:
 			case <-stopChanForGo:
+				// do nothing
 			case <-tick.C:
-				r.Stop()
+				if r.isTimeout(tick) {
+					r.Stop()
+				}
 			}
 		}
 
@@ -76,11 +82,12 @@ func (r *wsMsgQueue) write() {
 			break
 		}
 		msg = nil
+		r.lastTick = TimeStamp
 	}
 	tick.Stop()
 }
 
-func (r *wsMsgQueue) connect() {
+func (r *wsMsgQue) connect() {
 	conn, _, err := websocket.DefaultDialer.Dial(r.address, nil)
 	if err != nil {
 		fmt.Printf("websocket connect dial err:%v", err)
@@ -102,7 +109,7 @@ func (r *wsMsgQueue) connect() {
 	})
 }
 
-func (r *wsMsgQueue) Reconnect(offset int) {
+func (r *wsMsgQue) Reconnect(offset int) {
 	if r.conn != nil {
 		return
 	}
@@ -120,11 +127,12 @@ func (r *wsMsgQueue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newWsConnect(conn *websocket.Conn, address string) *wsMsgQueue {
-	mq := &wsMsgQueue{
-		msgQueue: msgQueue{
+func newWsConnect(conn *websocket.Conn, address string) *wsMsgQue {
+	mq := &wsMsgQue{
+		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
+			lastTick:     TimeStamp,
 		},
 		conn:    conn,
 		address: address,
@@ -136,11 +144,12 @@ func newWsConnect(conn *websocket.Conn, address string) *wsMsgQueue {
 }
 
 // 构造接受连接对象 来自http的upgrade
-func newWsAccept(conn *websocket.Conn) *wsMsgQueue {
-	mq := &wsMsgQueue{
-		msgQueue: msgQueue{
+func newWsAccept(conn *websocket.Conn) *wsMsgQue {
+	mq := &wsMsgQue{
+		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
+			lastTick:     TimeStamp,
 		},
 		conn: conn,
 	}
@@ -164,18 +173,16 @@ func WsListen(requestUrl string) {
 			fmt.Printf("upgrade err:%v", err)
 			return
 		}
+		mq := newWsAccept(conn)
 		Gogo(func() {
-			mq := newWsAccept(conn)
-			Gogo(func() {
-				fmt.Printf("ws[%v] read start", mq.uid)
-				mq.read()
-				fmt.Printf("ws[%v] read end", mq.uid)
-			})
-			Gogo(func() {
-				fmt.Printf("ws[%v] write start", mq.uid)
-				mq.write()
-				fmt.Printf("ws[%v] write end", mq.uid)
-			})
+			fmt.Printf("ws[%v] read start", mq.uid)
+			mq.read()
+			fmt.Printf("ws[%v] read end", mq.uid)
+		})
+		Gogo(func() {
+			fmt.Printf("ws[%v] write start", mq.uid)
+			mq.write()
+			fmt.Printf("ws[%v] write end", mq.uid)
 		})
 	})
 }

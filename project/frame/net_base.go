@@ -1,18 +1,22 @@
 package frame
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-type msgQueue struct {
+type msgQue struct {
 	uid          uint32
 	stopFlag     int32 // CAS_Int32
 	writeChannel chan *Message
+	lastTick     int64
 }
 
-func (r *msgQueue) IsStop() bool {
+func (r *msgQue) IsStop() bool {
 	return r.stopFlag == 1
 }
 
-func (r *msgQueue) SendMsg(msg *Message) (rep bool) {
+func (r *msgQue) SendMsg(msg *Message) (rep bool) {
 	if r.IsStop() || msg == nil {
 		return false
 	}
@@ -30,7 +34,16 @@ func (r *msgQueue) SendMsg(msg *Message) (rep bool) {
 	return true
 }
 
-func (r *msgQueue) baseStop() {
+func (r *msgQue) isTimeout(tick *time.Timer) bool {
+	past := int(TimeStamp - r.lastTick)
+	if past < MsgTimeoutSec {
+		tick.Reset(time.Second * time.Duration(MsgTimeoutSec-past))
+		return false
+	}
+	return true
+}
+
+func (r *msgQue) baseStop() {
 	if r.writeChannel != nil {
 		close(r.writeChannel)
 	}
@@ -39,14 +52,11 @@ func (r *msgQueue) baseStop() {
 	msgQueLock.Unlock()
 }
 
-func (r *msgQueue) processMsg(msg *Message) {
+func (r *msgQue) processMsg(msg *Message) bool {
 	Gogo(func() {
-		r.processMsgReal(msg)
+		//r.processMsgReal(msg)
 	})
-}
-
-func (r *msgQueue) processMsgReal(msg *Message) {
-
+	return true
 }
 
 type IMsgQueue interface {

@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-type tcpMsqQueue struct {
-	msgQueue
+type tcpMsqQue struct {
+	msgQue
 	conn       net.Conn
 	listener   net.Listener
 	waitGroup  sync.WaitGroup
@@ -19,13 +19,13 @@ type tcpMsqQueue struct {
 	connecting int32
 }
 
-func (r *tcpMsqQueue) Stop() {
+func (r *tcpMsqQue) Stop() {
 	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
 		r.baseStop()
 	}
 }
 
-func (r *tcpMsqQueue) read() {
+func (r *tcpMsqQue) read() {
 	defer func() {
 		r.waitGroup.Done()
 		if err := recover(); err != nil {
@@ -40,7 +40,7 @@ func (r *tcpMsqQueue) read() {
 	var body []byte
 
 	for !r.IsStop() {
-		// 先读消息头
+		// 消息头
 		if head == nil {
 			_, err := io.ReadFull(r.conn, headData)
 			if err != nil {
@@ -54,18 +54,21 @@ func (r *tcpMsqQueue) read() {
 			body = make([]byte, head.Length)
 			continue
 		}
-		// 再读消息体
+		// 消息体
 		_, err := io.ReadFull(r.conn, body)
 		if err != nil {
 			fmt.Printf("read head body err:%v", err)
 			break
 		}
-		r.processMsg(&Message{Head: head, Body: body})
+		if !r.processMsg(&Message{Head: head, Body: body}) {
+			break
+		}
 		head, body = nil, nil
+		r.lastTick = TimeStamp
 	}
 }
 
-func (r *tcpMsqQueue) write() {
+func (r *tcpMsqQue) write() {
 	defer func() {
 		r.waitGroup.Done()
 		if err := recover(); err != nil {
@@ -92,7 +95,9 @@ func (r *tcpMsqQueue) write() {
 			case <-stopChanForGo:
 				// do nothing
 			case <-tick.C:
-				r.Stop()
+				if r.isTimeout(tick) {
+					r.Stop()
+				}
 			}
 		}
 
@@ -114,15 +119,16 @@ func (r *tcpMsqQueue) write() {
 			writePos = 0
 			msg = nil
 		}
+		r.lastTick = TimeStamp
 	}
 	tick.Stop()
 }
 
 // 主动向对端发起连接
-func (r *tcpMsqQueue) connect() {
+func (r *tcpMsqQue) connect() {
 	conn, err := net.DialTimeout(r.netType, r.address, time.Second)
 	if err != nil {
-		fmt.Printf("tcpMsqQueue connect err:%v", err)
+		fmt.Printf("tcpMsqQue connect err:%v", err)
 		atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
 		r.Stop()
 		return
@@ -141,7 +147,7 @@ func (r *tcpMsqQueue) connect() {
 	})
 }
 
-func (r *tcpMsqQueue) Reconnect(offset int) {
+func (r *tcpMsqQue) Reconnect(offset int) {
 	if r.conn != nil {
 		return
 	}
@@ -159,11 +165,12 @@ func (r *tcpMsqQueue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newTcpConnect(conn net.Conn, netType string, address string) *tcpMsqQueue {
-	mq := &tcpMsqQueue{
-		msgQueue: msgQueue{
+func newTcpConnect(conn net.Conn, netType string, address string) *tcpMsqQue {
+	mq := &tcpMsqQue{
+		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
+			lastTick:     TimeStamp,
 		},
 		conn:    conn,
 		netType: netType,
@@ -176,11 +183,12 @@ func newTcpConnect(conn net.Conn, netType string, address string) *tcpMsqQueue {
 }
 
 // 构造接受连接对象 tcp.Accept
-func newTcpAccept(conn net.Conn) *tcpMsqQueue {
-	mq := &tcpMsqQueue{
-		msgQueue: msgQueue{
+func newTcpAccept(conn net.Conn) *tcpMsqQue {
+	mq := &tcpMsqQue{
+		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
+			lastTick:     TimeStamp,
 		},
 		conn: conn,
 	}
@@ -190,32 +198,31 @@ func newTcpAccept(conn net.Conn) *tcpMsqQueue {
 	return mq
 }
 
-func TcpListen(address string) {
+func TcpListen(address string) error {
 	listener, lErr := net.Listen("tcp", address)
 	if lErr != nil {
 		fmt.Printf("tcp listen err:%v", lErr)
-		return
+		return lErr
 	}
 	Gogo(func() {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
-				fmt.Printf("tcpMsqQueue listener accept err:%v", err)
+				fmt.Printf("tcpMsqQue listener accept err:%v", err)
 				continue
 			}
+			mq := newTcpAccept(conn)
 			Gogo(func() {
-				mq := newTcpAccept(conn)
-				Gogo(func() {
-					fmt.Printf("tcp[%v] read start", mq.uid)
-					mq.read()
-					fmt.Printf("tcp[%v] read end", mq.uid)
-				})
-				Gogo(func() {
-					fmt.Printf("tcp[%v] write start", mq.uid)
-					mq.write()
-					fmt.Printf("tcp[%v] write end", mq.uid)
-				})
+				fmt.Printf("tcp[%v] read start", mq.uid)
+				mq.read()
+				fmt.Printf("tcp[%v] read end", mq.uid)
+			})
+			Gogo(func() {
+				fmt.Printf("tcp[%v] write start", mq.uid)
+				mq.write()
+				fmt.Printf("tcp[%v] write end", mq.uid)
 			})
 		}
 	})
+	return nil
 }
