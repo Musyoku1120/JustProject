@@ -165,14 +165,14 @@ func (r *tcpMsqQue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newTcpConnect(conn net.Conn, netType string, address string) *tcpMsqQue {
+func newTcpConnect(netType string, address string) *tcpMsqQue {
 	mq := &tcpMsqQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
 		},
-		conn:    conn,
+		conn:    nil,
 		netType: netType,
 		address: address,
 	}

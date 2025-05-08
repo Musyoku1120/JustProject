@@ -127,14 +127,14 @@ func (r *wsMsgQue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newWsConnect(conn *websocket.Conn, address string) *wsMsgQue {
+func newWsConnect(address string) *wsMsgQue {
 	mq := &wsMsgQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
 		},
-		conn:    conn,
+		conn:    nil,
 		address: address,
 	}
 	msgQueLock.Lock()
