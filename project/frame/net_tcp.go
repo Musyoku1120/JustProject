@@ -12,7 +12,6 @@ import (
 type tcpMsqQue struct {
 	msgQue
 	conn       net.Conn
-	listener   net.Listener
 	waitGroup  sync.WaitGroup
 	netType    string
 	address    string
@@ -92,7 +91,7 @@ func (r *tcpMsqQue) write() {
 				if msg != nil {
 					body = msg.Bytes()
 				}
-			case <-stopChanForGo:
+			case <-stopChannel:
 				// do nothing
 			case <-tick.C:
 				if r.isTimeout(tick) {

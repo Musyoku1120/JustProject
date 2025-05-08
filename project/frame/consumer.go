@@ -24,7 +24,7 @@ func Gogo(fn func()) {
 		// 加入等待队列
 		for pc <= poolSize {
 			select {
-			case <-stopChanForGo:
+			case <-stopChannel:
 				pc = poolSize + 1
 			case fun := <-poolChan:
 				TryIt(fun, nil)

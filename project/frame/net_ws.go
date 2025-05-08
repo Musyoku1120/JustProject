@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -12,7 +11,6 @@ import (
 type wsMsgQue struct {
 	msgQue
 	conn       *websocket.Conn
-	waitGroup  sync.WaitGroup
 	requestUrl string
 	address    string
 	connecting int32
@@ -62,7 +60,7 @@ func (r *wsMsgQue) write() {
 		if msg == nil {
 			select {
 			case msg = <-r.writeChannel:
-			case <-stopChanForGo:
+			case <-stopChannel:
 				// do nothing
 			case <-tick.C:
 				if r.isTimeout(tick) {
@@ -117,7 +115,6 @@ func (r *wsMsgQue) Reconnect(offset int) {
 		return
 	}
 	Gogo(func() {
-		r.waitGroup.Wait()
 		if offset > 0 {
 			time.Sleep(time.Millisecond * time.Duration(offset))
 		}
