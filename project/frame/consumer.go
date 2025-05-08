@@ -2,7 +2,7 @@ package frame
 
 import "sync/atomic"
 
-func AsyncDo(fn func()) {
+func Gogo(fn func()) {
 	pc := poolSize + 1
 	select {
 	case poolChan <- fn:

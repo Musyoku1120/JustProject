@@ -8,8 +8,12 @@ type msgQueue struct {
 	writeChannel chan *Message
 }
 
+func (r *msgQueue) IsStop() bool {
+	return r.stopFlag == 1
+}
+
 func (r *msgQueue) SendMsg(msg *Message) (rep bool) {
-	if r.stopFlag == 1 || msg == nil {
+	if r.IsStop() || msg == nil {
 		return false
 	}
 	defer func() {
@@ -26,8 +30,17 @@ func (r *msgQueue) SendMsg(msg *Message) (rep bool) {
 	return true
 }
 
+func (r *msgQueue) baseStop() {
+	if r.writeChannel != nil {
+		close(r.writeChannel)
+	}
+	msgQueLock.Lock()
+	delete(msgQueMap, r.uid)
+	msgQueLock.Unlock()
+}
+
 func (r *msgQueue) processMsg(msg *Message) {
-	AsyncDo(func() {
+	Gogo(func() {
 		r.processMsgReal(msg)
 	})
 }

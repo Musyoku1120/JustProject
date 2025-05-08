@@ -21,7 +21,7 @@ type tcpMsqQueue struct {
 
 func (r *tcpMsqQueue) Stop() {
 	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
-
+		r.baseStop()
 	}
 }
 
@@ -39,7 +39,8 @@ func (r *tcpMsqQueue) read() {
 	var head *MessageHead
 	var body []byte
 
-	for r.stopFlag == 0 {
+	for !r.IsStop() {
+		// 先读消息头
 		if head == nil {
 			_, err := io.ReadFull(r.conn, headData)
 			if err != nil {
@@ -51,16 +52,16 @@ func (r *tcpMsqQueue) read() {
 				break
 			}
 			body = make([]byte, head.Length)
-
-		} else {
-			_, err := io.ReadFull(r.conn, body)
-			if err != nil {
-				fmt.Printf("read head body err:%v", err)
-				break
-			}
-			r.processMsg(&Message{Head: head, Body: body})
-			head, body = nil, nil
+			continue
 		}
+		// 再读消息体
+		_, err := io.ReadFull(r.conn, body)
+		if err != nil {
+			fmt.Printf("read head body err:%v", err)
+			break
+		}
+		r.processMsg(&Message{Head: head, Body: body})
+		head, body = nil, nil
 	}
 }
 
@@ -79,17 +80,17 @@ func (r *tcpMsqQueue) write() {
 
 	var msg *Message
 	var body []byte
-	var writePos int = 0
+	var writePos = 0
 	tick := time.NewTimer(time.Second * time.Duration(MsgTimeoutSec))
-	for r.stopFlag == 0 {
+	for !r.IsStop() {
 		if msg == nil {
 			select {
-			case <-stopChanForGo:
-				// do nothing
 			case msg = <-r.writeChannel:
 				if msg != nil {
 					body = msg.Bytes()
 				}
+			case <-stopChanForGo:
+				// do nothing
 			case <-tick.C:
 				r.Stop()
 			}
@@ -99,8 +100,9 @@ func (r *tcpMsqQueue) write() {
 			continue
 		}
 
+		// 拆包发送
 		if writePos < len(body) {
-			n, err := r.conn.Write(body[writePos:]) // 分包发送
+			n, err := r.conn.Write(body[writePos:])
 			if err != nil {
 				fmt.Printf("write body err:%v", err)
 				break
@@ -116,32 +118,6 @@ func (r *tcpMsqQueue) write() {
 	tick.Stop()
 }
 
-// 监听来自远端的连接
-func (r *tcpMsqQueue) listen() {
-	for r.stopFlag == 0 {
-		conn, err := r.listener.Accept()
-		if err != nil {
-			fmt.Printf("tcpMsqQueue listener accept err:%v", err)
-			break
-		} else {
-			AsyncDo(func() {
-				mq := newTcpAccept(conn)
-				AsyncDo(func() {
-					fmt.Printf("tcp[%v] read start", mq.uid)
-					mq.read()
-					fmt.Printf("tcp[%v] read end", mq.uid)
-				})
-				AsyncDo(func() {
-					fmt.Printf("tcp[%v] write start", mq.uid)
-					mq.write()
-					fmt.Printf("tcp[%v] write end", mq.uid)
-				})
-			})
-		}
-	}
-	r.Stop()
-}
-
 // 主动向对端发起连接
 func (r *tcpMsqQueue) connect() {
 	conn, err := net.DialTimeout(r.netType, r.address, time.Second)
@@ -153,12 +129,12 @@ func (r *tcpMsqQueue) connect() {
 	}
 	r.conn = conn
 	atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
-	AsyncDo(func() {
+	Gogo(func() {
 		fmt.Printf("tcp[%v] read start", r.uid)
 		r.read()
 		fmt.Printf("tcp[%v] read end", r.uid)
 	})
-	AsyncDo(func() {
+	Gogo(func() {
 		fmt.Printf("tcp[%v] write start", r.uid)
 		r.write()
 		fmt.Printf("tcp[%v] write end", r.uid)
@@ -172,36 +148,38 @@ func (r *tcpMsqQueue) Reconnect(offset int) {
 	if !atomic.CompareAndSwapInt32(&r.connecting, 0, 1) {
 		return
 	}
-	AsyncDo(func() {
+	Gogo(func() {
 		r.waitGroup.Wait()
 		if offset > 0 {
 			time.Sleep(time.Millisecond * time.Duration(offset))
 		}
-		r.stopFlag = 0
+		r.Stop()
 		r.connect()
 	})
 }
 
+// 构造主动连接对象
 func newTcpConnect(conn net.Conn, netType string, address string) *tcpMsqQueue {
 	mq := &tcpMsqQueue{
 		msgQueue: msgQueue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
-			stopFlag:     0,
 			writeChannel: make(chan *Message, 64),
 		},
-		conn:      conn,
-		waitGroup: sync.WaitGroup{},
-		netType:   netType,
-		address:   address,
+		conn:    conn,
+		netType: netType,
+		address: address,
 	}
+	msgQueLock.Lock()
+	msgQueMap[mq.uid] = mq
+	msgQueLock.Unlock()
 	return mq
 }
 
+// 构造接受连接对象 tcp.Accept
 func newTcpAccept(conn net.Conn) *tcpMsqQueue {
 	mq := &tcpMsqQueue{
 		msgQueue: msgQueue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
-			stopFlag:     0,
 			writeChannel: make(chan *Message, 64),
 		},
 		conn: conn,
@@ -210,4 +188,34 @@ func newTcpAccept(conn net.Conn) *tcpMsqQueue {
 	msgQueMap[mq.uid] = mq
 	msgQueLock.Unlock()
 	return mq
+}
+
+func TcpListen(address string) {
+	listener, lErr := net.Listen("tcp", address)
+	if lErr != nil {
+		fmt.Printf("tcp listen err:%v", lErr)
+		return
+	}
+	Gogo(func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				fmt.Printf("tcpMsqQueue listener accept err:%v", err)
+				continue
+			}
+			Gogo(func() {
+				mq := newTcpAccept(conn)
+				Gogo(func() {
+					fmt.Printf("tcp[%v] read start", mq.uid)
+					mq.read()
+					fmt.Printf("tcp[%v] read end", mq.uid)
+				})
+				Gogo(func() {
+					fmt.Printf("tcp[%v] write start", mq.uid)
+					mq.write()
+					fmt.Printf("tcp[%v] write end", mq.uid)
+				})
+			})
+		}
+	})
 }

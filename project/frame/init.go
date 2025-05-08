@@ -1,6 +1,8 @@
 package frame
 
-import "sync"
+import (
+	"sync"
+)
 
 var waitAll = &sync.WaitGroup{} // 等待所有goroutine
 var stopChanForGo = make(chan struct{})
