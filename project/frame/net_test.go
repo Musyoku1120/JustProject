@@ -73,8 +73,18 @@ func TestTcpMsgQue_ReadWrite(t *testing.T) {
 		if msg.Bytes() == nil {
 			t.Fatal("消息编码失败")
 		}
-		ok := mq.SendMsg(msg)
-		if !ok {
+		if !mq.SendMsg(msg) {
+			t.Error("消息发送失败")
+		}
+
+		msg = &Message{
+			Head: &MessageHead{ProtoId: 1, Length: 3},
+			Body: []byte{0x02, 0x03, 0x04},
+		}
+		if msg.Bytes() == nil {
+			t.Fatal("消息编码失败")
+		}
+		if !mq.SendMsg(msg) {
 			t.Error("消息发送失败")
 		}
 

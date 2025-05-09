@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 const (
@@ -81,27 +80,6 @@ func (r *Message) Bytes() []byte {
 	fullMsg := make([]byte, 0, MsgHeadSize+len(r.Body))
 	fullMsg = append(fullMsg, headBytes...)
 	fullMsg = append(fullMsg, r.Body...)
-	fmt.Printf("msg bytes: %v\n", fullMsg)
+	//fmt.Printf("msg bytes: %v\n", fullMsg)
 	return fullMsg
-}
-
-func ParseMessage(data []byte) (*Message, error) {
-	if len(data) < MsgHeadSize {
-		return nil, errors.New("incomplete header")
-	}
-
-	head := NewMessageHead(data[:MsgHeadSize])
-	if head == nil {
-		return nil, errors.New("parse header failed: %w")
-	}
-
-	totalExpected := MsgHeadSize + int(head.Length)
-	if len(data) < totalExpected {
-		return nil, errors.New("incomplete body")
-	}
-
-	body := make([]byte, head.Length)
-	copy(body, data[MsgHeadSize:totalExpected])
-
-	return &Message{Head: head, Body: body}, nil
 }

@@ -55,7 +55,7 @@ func (r *msgQue) baseStop() {
 }
 
 func (r *msgQue) processMsg(msg *Message) (rp bool) {
-	rp = false
+	rp = true
 	Gogo(func() {
 		fun := r.msgHandler.GetHandler(int32(msg.Head.ProtoId))
 		if fun != nil {
