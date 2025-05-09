@@ -43,11 +43,14 @@ func (r *tcpMsqQue) read() {
 		if head == nil {
 			_, err := io.ReadFull(r.conn, headData)
 			if err != nil {
+				if err != io.EOF {
+					fmt.Printf("recv data err:%v\n", err)
+				}
 				fmt.Printf("read head err:%v\n", err)
 				break
 			}
 			if head = NewMessageHead(headData); head == nil {
-				fmt.Printf("read head head:%v\n", head)
+				fmt.Printf("read head nil:%v\n", head)
 				break
 			}
 			body = make([]byte, head.Length)
@@ -84,7 +87,7 @@ func (r *tcpMsqQue) write() {
 	var body []byte
 	var writePos = 0
 	tick := time.NewTimer(time.Second * time.Duration(MsgTimeoutSec))
-	for !r.IsStop() {
+	for !r.IsStop() || msg != nil {
 		if msg == nil {
 			select {
 			case msg = <-r.writeChannel:
@@ -158,7 +161,7 @@ func (r *tcpMsqQue) Reconnect(offset int) {
 		if offset > 0 {
 			time.Sleep(time.Millisecond * time.Duration(offset))
 		}
-		r.Stop()
+		r.stopFlag = 0
 		r.connect()
 	})
 }

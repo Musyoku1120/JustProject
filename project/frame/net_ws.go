@@ -56,7 +56,7 @@ func (r *wsMsgQue) write() {
 
 	var msg *Message
 	tick := time.NewTimer(time.Second * time.Duration(MsgTimeoutSec))
-	for !r.IsStop() {
+	for !r.IsStop() || msg != nil {
 		if msg == nil {
 			select {
 			case msg = <-r.writeChannel:

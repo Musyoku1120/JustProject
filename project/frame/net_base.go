@@ -23,6 +23,7 @@ func (r *msgQue) SendMsg(msg *Message) (rp bool) {
 	}
 	defer func() {
 		if err := recover(); err != nil {
+			fmt.Printf("msqQueue[%v] send panic\n", r.uid)
 			rp = false
 		}
 	}()
