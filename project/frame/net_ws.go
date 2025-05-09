@@ -25,7 +25,7 @@ func (r *wsMsgQue) Stop() {
 func (r *wsMsgQue) read() {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue read panic id:%v err:%v", r.uid, err)
+			fmt.Printf("msgQue read panic id:%v err:%v\n", r.uid, err)
 		}
 		r.Stop()
 	}()
@@ -33,7 +33,7 @@ func (r *wsMsgQue) read() {
 	for !r.IsStop() {
 		_, data, err := r.conn.ReadMessage()
 		if err != nil {
-			fmt.Printf("read message err:%v", err)
+			fmt.Printf("read message err:%v\n", err)
 			break
 		}
 		if !r.processMsg(&Message{Body: data}) {
@@ -46,7 +46,7 @@ func (r *wsMsgQue) read() {
 func (r *wsMsgQue) write() {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue write panic id:%v err:%v", r.uid, err)
+			fmt.Printf("msgQue write panic id:%v err:%v\n", r.uid, err)
 		}
 		if r.conn != nil {
 			_ = r.conn.Close()
@@ -76,7 +76,7 @@ func (r *wsMsgQue) write() {
 
 		err := r.conn.WriteMessage(websocket.BinaryMessage, msg.Body)
 		if err != nil {
-			fmt.Printf("write message err:%v", err)
+			fmt.Printf("write message err:%v\n", err)
 			break
 		}
 		msg = nil
@@ -88,7 +88,7 @@ func (r *wsMsgQue) write() {
 func (r *wsMsgQue) connect() {
 	conn, _, err := websocket.DefaultDialer.Dial(r.address, nil)
 	if err != nil {
-		fmt.Printf("websocket connect dial err:%v", err)
+		fmt.Printf("websocket connect dial err:%v\n", err)
 		atomic.CompareAndSwapInt32(&r.connecting, 0, 1)
 		r.Stop()
 		return
@@ -96,14 +96,14 @@ func (r *wsMsgQue) connect() {
 	r.conn = conn
 	atomic.CompareAndSwapInt32(&r.connecting, 0, 1)
 	Gogo(func() {
-		fmt.Printf("ws[%v] read start", r.uid)
+		fmt.Printf("from connect dial ws[%v] read start\n", r.uid)
 		r.read()
-		fmt.Printf("ws[%v] read end", r.uid)
+		fmt.Printf("from connect dial ws[%v] read end\n", r.uid)
 	})
 	Gogo(func() {
-		fmt.Printf("ws[%v] write start", r.uid)
+		fmt.Printf("from connect dial ws[%v] write start\n", r.uid)
 		r.write()
-		fmt.Printf("ws[%v] write end", r.uid)
+		fmt.Printf("from connect dial ws[%v] write end\n", r.uid)
 	})
 }
 
@@ -124,12 +124,13 @@ func (r *wsMsgQue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newWsConnect(address string) *wsMsgQue {
+func newWsConnect(address string, handler msgHandler) *wsMsgQue {
 	mq := &wsMsgQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
+			msgHandler:   handler,
 		},
 		conn:    nil,
 		address: address,
@@ -141,12 +142,13 @@ func newWsConnect(address string) *wsMsgQue {
 }
 
 // 构造接受连接对象 来自http的upgrade
-func newWsAccept(conn *websocket.Conn) *wsMsgQue {
+func newWsAccept(conn *websocket.Conn, handler msgHandler) *wsMsgQue {
 	mq := &wsMsgQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
+			msgHandler:   handler,
 		},
 		conn: conn,
 	}
@@ -156,7 +158,7 @@ func newWsAccept(conn *websocket.Conn) *wsMsgQue {
 	return mq
 }
 
-func WsListen(requestUrl string) {
+func WsListen(requestUrl string, handler msgHandler) {
 	wsUpgrader := websocket.Upgrader{
 		ReadBufferSize:  4096,
 		WriteBufferSize: 4096,
@@ -167,19 +169,19 @@ func WsListen(requestUrl string) {
 	http.HandleFunc(requestUrl, func(writer http.ResponseWriter, request *http.Request) {
 		conn, err := wsUpgrader.Upgrade(writer, request, nil)
 		if err != nil {
-			fmt.Printf("upgrade err:%v", err)
+			fmt.Printf("upgrade err:%v\n", err)
 			return
 		}
-		mq := newWsAccept(conn)
+		mq := newWsAccept(conn, handler)
 		Gogo(func() {
-			fmt.Printf("ws[%v] read start", mq.uid)
+			fmt.Printf("from listen accept ws[%v] read start\n", mq.uid)
 			mq.read()
-			fmt.Printf("ws[%v] read end", mq.uid)
+			fmt.Printf("from listen accept ws[%v] read end\n", mq.uid)
 		})
 		Gogo(func() {
-			fmt.Printf("ws[%v] write start", mq.uid)
+			fmt.Printf("from listen accept ws[%v] write start\n", mq.uid)
 			mq.write()
-			fmt.Printf("ws[%v] write end", mq.uid)
+			fmt.Printf("from listen accept ws[%v] write end\n", mq.uid)
 		})
 	})
 }

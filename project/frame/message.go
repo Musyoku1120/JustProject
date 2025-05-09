@@ -7,17 +7,25 @@ import (
 )
 
 const (
-	MsgHeadSize    = 4
-	MsgBodySizeMax = 1024 * 1024
-	MsgTimeoutSec  = 300
+	MsgTimeoutSec  = 200         // 消息超时秒
+	MsgHeadSize    = 12          // 消息头长度
+	MsgBodySizeMax = 1024 * 1024 // 消息体上限
 )
 
 type MessageHead struct {
-	Length uint32 // 消息体长度（不含头）
+	ProtoId  uint32 // 协议id
+	PlayerId uint32 // 玩家id
+	Length   uint32 // 消息体长度（不含头）
 }
 
 func (r *MessageHead) Encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.LittleEndian, r.ProtoId); err != nil {
+		return nil, err
+	}
+	if err := binary.Write(buf, binary.LittleEndian, r.PlayerId); err != nil {
+		return nil, err
+	}
 	if err := binary.Write(buf, binary.LittleEndian, r.Length); err != nil {
 		return nil, err
 	}
@@ -29,6 +37,12 @@ func (r *MessageHead) Decode(data []byte) error {
 		return errors.New("message header too short")
 	}
 	buf := bytes.NewBuffer(data)
+	if err := binary.Read(buf, binary.LittleEndian, &r.ProtoId); err != nil {
+		return err
+	}
+	if err := binary.Read(buf, binary.LittleEndian, &r.PlayerId); err != nil {
+		return err
+	}
 	if err := binary.Read(buf, binary.LittleEndian, &r.Length); err != nil {
 		return err
 	}

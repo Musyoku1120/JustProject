@@ -10,19 +10,20 @@ type msgQue struct {
 	stopFlag     int32 // CAS_Int32
 	writeChannel chan *Message
 	lastTick     int64
+	msgHandler
 }
 
 func (r *msgQue) IsStop() bool {
 	return r.stopFlag == 1
 }
 
-func (r *msgQue) SendMsg(msg *Message) (rep bool) {
+func (r *msgQue) SendMsg(msg *Message) (rp bool) {
 	if r.IsStop() || msg == nil {
 		return false
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			rep = false
+			rp = false
 		}
 	}()
 	select {
@@ -52,11 +53,15 @@ func (r *msgQue) baseStop() {
 	msgQueLock.Unlock()
 }
 
-func (r *msgQue) processMsg(msg *Message) bool {
+func (r *msgQue) processMsg(msg *Message) (rp bool) {
+	rp = false
 	Gogo(func() {
-		//r.processMsgReal(msg)
+		fun := r.msgHandler.GetHandler(int32(msg.Head.ProtoId))
+		if fun != nil {
+			rp = fun(msg.Body)
+		}
 	})
-	return true
+	return rp
 }
 
 type IMsgQueue interface {

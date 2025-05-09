@@ -28,7 +28,7 @@ func (r *tcpMsqQue) read() {
 	defer func() {
 		r.waitGroup.Done()
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue read panic id:%v err:%v", r.uid, err)
+			fmt.Printf("msgQue read panic id:%v err:%v\n", r.uid, err)
 		}
 		r.Stop()
 	}()
@@ -43,11 +43,11 @@ func (r *tcpMsqQue) read() {
 		if head == nil {
 			_, err := io.ReadFull(r.conn, headData)
 			if err != nil {
-				fmt.Printf("read head err:%v", err)
+				fmt.Printf("read head err:%v\n", err)
 				break
 			}
 			if head = NewMessageHead(headData); head == nil {
-				fmt.Printf("read head head:%v", head)
+				fmt.Printf("read head head:%v\n", head)
 				break
 			}
 			body = make([]byte, head.Length)
@@ -56,7 +56,7 @@ func (r *tcpMsqQue) read() {
 		// 消息体
 		_, err := io.ReadFull(r.conn, body)
 		if err != nil {
-			fmt.Printf("read head body err:%v", err)
+			fmt.Printf("read head body err:%v\n", err)
 			break
 		}
 		if !r.processMsg(&Message{Head: head, Body: body}) {
@@ -71,7 +71,7 @@ func (r *tcpMsqQue) write() {
 	defer func() {
 		r.waitGroup.Done()
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue write panic id:%v err:%v", r.uid, err)
+			fmt.Printf("msgQue write panic id:%v err:%v\n", r.uid, err)
 		}
 		if r.conn != nil {
 			_ = r.conn.Close()
@@ -108,7 +108,7 @@ func (r *tcpMsqQue) write() {
 		if writePos < len(body) {
 			n, err := r.conn.Write(body[writePos:])
 			if err != nil {
-				fmt.Printf("write body err:%v", err)
+				fmt.Printf("write body err:%v\n", err)
 				break
 			}
 			writePos += n
@@ -127,7 +127,7 @@ func (r *tcpMsqQue) write() {
 func (r *tcpMsqQue) connect() {
 	conn, err := net.DialTimeout(r.netType, r.address, time.Second)
 	if err != nil {
-		fmt.Printf("tcpMsqQue connect err:%v", err)
+		fmt.Printf("tcpMsqQue connect err:%v\n", err)
 		atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
 		r.Stop()
 		return
@@ -135,14 +135,14 @@ func (r *tcpMsqQue) connect() {
 	r.conn = conn
 	atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
 	Gogo(func() {
-		fmt.Printf("tcp[%v] read start", r.uid)
+		fmt.Printf("from connect dial tcp[%v] read start\n", r.uid)
 		r.read()
-		fmt.Printf("tcp[%v] read end", r.uid)
+		fmt.Printf("from connect dial tcp[%v] read end\n", r.uid)
 	})
 	Gogo(func() {
-		fmt.Printf("tcp[%v] write start", r.uid)
+		fmt.Printf("from connect dial tcp[%v] write start\n", r.uid)
 		r.write()
-		fmt.Printf("tcp[%v] write end", r.uid)
+		fmt.Printf("from connect dial tcp[%v] write end\n", r.uid)
 	})
 }
 
@@ -164,12 +164,13 @@ func (r *tcpMsqQue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newTcpConnect(netType string, address string) *tcpMsqQue {
+func newTcpConnect(netType string, address string, handler msgHandler) *tcpMsqQue {
 	mq := &tcpMsqQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
+			msgHandler:   handler,
 		},
 		conn:    nil,
 		netType: netType,
@@ -182,12 +183,13 @@ func newTcpConnect(netType string, address string) *tcpMsqQue {
 }
 
 // 构造接受连接对象 tcp.Accept
-func newTcpAccept(conn net.Conn) *tcpMsqQue {
+func newTcpAccept(conn net.Conn, handler msgHandler) *tcpMsqQue {
 	mq := &tcpMsqQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
+			msgHandler:   handler,
 		},
 		conn: conn,
 	}
@@ -197,29 +199,29 @@ func newTcpAccept(conn net.Conn) *tcpMsqQue {
 	return mq
 }
 
-func TcpListen(address string) error {
+func TcpListen(address string, handler msgHandler) error {
 	listener, lErr := net.Listen("tcp", address)
 	if lErr != nil {
-		fmt.Printf("tcp listen err:%v", lErr)
+		fmt.Printf("tcp listen err:%v\n", lErr)
 		return lErr
 	}
 	Gogo(func() {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
-				fmt.Printf("tcpMsqQue listener accept err:%v", err)
+				fmt.Printf("tcpMsqQue listener accept err:%v\n", err)
 				continue
 			}
-			mq := newTcpAccept(conn)
+			mq := newTcpAccept(conn, handler)
 			Gogo(func() {
-				fmt.Printf("tcp[%v] read start", mq.uid)
+				fmt.Printf("from listen accept tcp[%v] read start\n", mq.uid)
 				mq.read()
-				fmt.Printf("tcp[%v] read end", mq.uid)
+				fmt.Printf("from listen accept tcp[%v] read end\n", mq.uid)
 			})
 			Gogo(func() {
-				fmt.Printf("tcp[%v] write start", mq.uid)
+				fmt.Printf("from listen accept tcp[%v] write start\n", mq.uid)
 				mq.write()
-				fmt.Printf("tcp[%v] write end", mq.uid)
+				fmt.Printf("from listen accept tcp[%v] write end\n", mq.uid)
 			})
 		}
 	})
