@@ -56,12 +56,15 @@ func (r *msgQue) baseStop() {
 
 func (r *msgQue) processMsg(msg *Message) (rp bool) {
 	rp = true
-	Gogo(func() {
+	// 同步模式 收到消息即处理
+	TryIt(func() {
 		fun := r.msgHandler.GetHandler(int32(msg.Head.ProtoId))
 		if fun != nil {
 			rp = fun(msg.Body)
+		} else {
+			rp = false
 		}
-	})
+	}, nil)
 	return rp
 }
 

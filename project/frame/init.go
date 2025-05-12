@@ -21,3 +21,9 @@ var (
 	msgQueMap  = map[uint32]IMsgQueue{} // 消息队列字典
 	msgQueLock sync.Mutex               // 消息队列字典锁
 )
+
+var defaultLogger *Log
+
+func init() {
+	defaultLogger = NewLog(10000, &ConsoleLogger{})
+}
