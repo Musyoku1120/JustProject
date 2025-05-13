@@ -1,7 +1,6 @@
 package frame
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"sync/atomic"
@@ -25,7 +24,7 @@ func (r *wsMsgQue) Stop() {
 func (r *wsMsgQue) read() {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue read panic id:%v err:%v\n", r.uid, err)
+			LogError("msgQue read panic id:%v err:%v", r.uid, err)
 		}
 		r.Stop()
 	}()
@@ -33,7 +32,7 @@ func (r *wsMsgQue) read() {
 	for !r.IsStop() {
 		_, data, err := r.conn.ReadMessage()
 		if err != nil {
-			fmt.Printf("read message err:%v\n", err)
+			LogError("read message err:%v", err)
 			break
 		}
 		if !r.processMsg(&Message{Body: data}) {
@@ -46,7 +45,7 @@ func (r *wsMsgQue) read() {
 func (r *wsMsgQue) write() {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue write panic id:%v err:%v\n", r.uid, err)
+			LogError("msgQue write panic id:%v err:%v", r.uid, err)
 		}
 		if r.conn != nil {
 			_ = r.conn.Close()
@@ -76,7 +75,7 @@ func (r *wsMsgQue) write() {
 
 		err := r.conn.WriteMessage(websocket.BinaryMessage, msg.Body)
 		if err != nil {
-			fmt.Printf("write message err:%v\n", err)
+			LogError("write message err:%v", err)
 			break
 		}
 		msg = nil
@@ -88,7 +87,7 @@ func (r *wsMsgQue) write() {
 func (r *wsMsgQue) connect() {
 	conn, _, err := websocket.DefaultDialer.Dial(r.address, nil)
 	if err != nil {
-		fmt.Printf("websocket connect dial err:%v\n", err)
+		LogError("websocket connect dial err:%v", err)
 		atomic.CompareAndSwapInt32(&r.connecting, 0, 1)
 		r.Stop()
 		return
@@ -96,14 +95,14 @@ func (r *wsMsgQue) connect() {
 	r.conn = conn
 	atomic.CompareAndSwapInt32(&r.connecting, 0, 1)
 	Gogo(func() {
-		fmt.Printf("from connect dial ws[%v] read start\n", r.uid)
+		LogInfo("from connect dial ws[%v] read start", r.uid)
 		r.read()
-		fmt.Printf("from connect dial ws[%v] read end\n", r.uid)
+		LogInfo("from connect dial ws[%v] read end", r.uid)
 	})
 	Gogo(func() {
-		fmt.Printf("from connect dial ws[%v] write start\n", r.uid)
+		LogInfo("from connect dial ws[%v] write start", r.uid)
 		r.write()
-		fmt.Printf("from connect dial ws[%v] write end\n", r.uid)
+		LogInfo("from connect dial ws[%v] write end", r.uid)
 	})
 }
 
@@ -169,19 +168,19 @@ func WsListen(requestUrl string, handler msgHandler) {
 	http.HandleFunc(requestUrl, func(writer http.ResponseWriter, request *http.Request) {
 		conn, err := wsUpgrader.Upgrade(writer, request, nil)
 		if err != nil {
-			fmt.Printf("upgrade err:%v\n", err)
+			LogError("upgrade err:%v", err)
 			return
 		}
 		mq := newWsAccept(conn, handler)
 		Gogo(func() {
-			fmt.Printf("from listen accept ws[%v] read start\n", mq.uid)
+			LogInfo("from listen accept ws[%v] read start", mq.uid)
 			mq.read()
-			fmt.Printf("from listen accept ws[%v] read end\n", mq.uid)
+			LogInfo("from listen accept ws[%v] read end", mq.uid)
 		})
 		Gogo(func() {
-			fmt.Printf("from listen accept ws[%v] write start\n", mq.uid)
+			LogInfo("from listen accept ws[%v] write start", mq.uid)
 			mq.write()
-			fmt.Printf("from listen accept ws[%v] write end\n", mq.uid)
+			LogInfo("from listen accept ws[%v] write end", mq.uid)
 		})
 	})
 }

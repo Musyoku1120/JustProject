@@ -26,4 +26,5 @@ var defaultLogger *Log
 
 func init() {
 	defaultLogger = NewLog(10000, &ConsoleLogger{})
+	defaultLogger.SetLevel(LogLevelError)
 }

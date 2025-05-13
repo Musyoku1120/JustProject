@@ -1,7 +1,6 @@
 package frame
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -28,7 +27,7 @@ func (r *tcpMsqQue) read() {
 	defer func() {
 		r.waitGroup.Done()
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue read panic id:%v err:%v\n", r.uid, err)
+			LogPanic()
 		}
 		r.Stop()
 	}()
@@ -44,13 +43,13 @@ func (r *tcpMsqQue) read() {
 			_, err := io.ReadFull(r.conn, headData)
 			if err != nil {
 				if err != io.EOF {
-					fmt.Printf("recv data err:%v\n", err)
+					LogError("recv data err:%v", err)
 				}
-				fmt.Printf("read head err:%v\n", err)
+				LogError("read head err:%v\n", err)
 				break
 			}
 			if head = NewMessageHead(headData); head == nil {
-				fmt.Printf("read head nil:%v\n", head)
+				LogError("read head nil:%v", head)
 				break
 			}
 			body = make([]byte, head.Length)
@@ -59,7 +58,7 @@ func (r *tcpMsqQue) read() {
 		// 消息体
 		_, err := io.ReadFull(r.conn, body)
 		if err != nil {
-			fmt.Printf("read head body err:%v\n", err)
+			LogError("read head body err:%v", err)
 			break
 		}
 		if !r.processMsg(&Message{Head: head, Body: body}) {
@@ -74,7 +73,7 @@ func (r *tcpMsqQue) write() {
 	defer func() {
 		r.waitGroup.Done()
 		if err := recover(); err != nil {
-			fmt.Printf("msgQue write panic id:%v err:%v\n", r.uid, err)
+			LogError("msgQue write panic id:%v err:%v", r.uid, err)
 		}
 		if r.conn != nil {
 			_ = r.conn.Close()
@@ -111,7 +110,7 @@ func (r *tcpMsqQue) write() {
 		if writePos < len(body) {
 			n, err := r.conn.Write(body[writePos:])
 			if err != nil {
-				fmt.Printf("write body err:%v\n", err)
+				LogError("write body err:%v", err)
 				break
 			}
 			writePos += n
@@ -130,7 +129,7 @@ func (r *tcpMsqQue) write() {
 func (r *tcpMsqQue) connect() {
 	conn, err := net.DialTimeout(r.netType, r.address, time.Second)
 	if err != nil {
-		fmt.Printf("tcpMsqQue connect err:%v\n", err)
+		LogError("tcpMsqQue connect err:%v", err)
 		atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
 		r.Stop()
 		return
@@ -138,14 +137,14 @@ func (r *tcpMsqQue) connect() {
 	r.conn = conn
 	atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
 	Gogo(func() {
-		fmt.Printf("from connect dial tcp[%v] read start\n", r.uid)
+		LogInfo("from connect dial tcp[%v] read start", r.uid)
 		r.read()
-		fmt.Printf("from connect dial tcp[%v] read end\n", r.uid)
+		LogInfo("from connect dial tcp[%v] read end", r.uid)
 	})
 	Gogo(func() {
-		fmt.Printf("from connect dial tcp[%v] write start\n", r.uid)
+		LogInfo("from connect dial tcp[%v] write start", r.uid)
 		r.write()
-		fmt.Printf("from connect dial tcp[%v] write end\n", r.uid)
+		LogInfo("from connect dial tcp[%v] write end", r.uid)
 	})
 }
 
@@ -205,26 +204,26 @@ func newTcpAccept(conn net.Conn, handler msgHandler) *tcpMsqQue {
 func TcpListen(address string, handler msgHandler) error {
 	listener, lErr := net.Listen("tcp", address)
 	if lErr != nil {
-		fmt.Printf("tcp listen err:%v\n", lErr)
+		LogError("tcp listen err:%v", lErr)
 		return lErr
 	}
 	Gogo(func() {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
-				fmt.Printf("tcpMsqQue listener accept err:%v\n", err)
+				LogError("tcpMsqQue listener accept err:%v", err)
 				continue
 			}
 			mq := newTcpAccept(conn, handler)
 			Gogo(func() {
-				fmt.Printf("from listen accept tcp[%v] read start\n", mq.uid)
+				LogInfo("from listen accept tcp[%v] read start", mq.uid)
 				mq.read()
-				fmt.Printf("from listen accept tcp[%v] read end\n", mq.uid)
+				LogInfo("from listen accept tcp[%v] read end", mq.uid)
 			})
 			Gogo(func() {
-				fmt.Printf("from listen accept tcp[%v] write start\n", mq.uid)
+				LogInfo("from listen accept tcp[%v] write start", mq.uid)
 				mq.write()
-				fmt.Printf("from listen accept tcp[%v] write end\n", mq.uid)
+				LogInfo("from listen accept tcp[%v] write end", mq.uid)
 			})
 		}
 	})

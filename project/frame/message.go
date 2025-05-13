@@ -80,6 +80,5 @@ func (r *Message) Bytes() []byte {
 	fullMsg := make([]byte, 0, MsgHeadSize+len(r.Body))
 	fullMsg = append(fullMsg, headBytes...)
 	fullMsg = append(fullMsg, r.Body...)
-	//fmt.Printf("msg bytes: %v\n", fullMsg)
 	return fullMsg
 }

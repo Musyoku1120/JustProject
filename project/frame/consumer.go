@@ -39,10 +39,19 @@ func Gogo(fn func()) {
 func TryIt(fun func(), catch func(interface{})) {
 	defer func() {
 		if err := recover(); err != nil {
+			LogPanic()
 			if catch != nil {
 				catch(err)
 			}
 		}
 	}()
 	fun()
+}
+
+func goForLog(fn func()) {
+	waitAll.Add(1)
+	go func() {
+		fn()
+		waitAll.Done()
+	}()
 }

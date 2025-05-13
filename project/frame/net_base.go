@@ -1,7 +1,6 @@
 package frame
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -23,14 +22,14 @@ func (r *msgQue) SendMsg(msg *Message) (rp bool) {
 	}
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf("msqQueue[%v] send panic\n", r.uid)
+			LogPanic()
 			rp = false
 		}
 	}()
 	select {
 	case r.writeChannel <- msg:
 	default:
-		fmt.Printf("msqQueue[%v] channel full\n", r.uid)
+		LogInfo("msqQueue[%v] channel full", r.uid)
 		r.writeChannel <- msg
 	}
 	return true
