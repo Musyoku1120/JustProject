@@ -2,6 +2,7 @@ package frame
 
 import (
 	"sync"
+	"time"
 )
 
 var TimeStamp int64                   // 时间戳
@@ -27,4 +28,18 @@ var defaultLogger *Log
 func init() {
 	defaultLogger = NewLog(10000, &ConsoleLogger{})
 	defaultLogger.SetLevel(LogLevelError)
+
+	Gogo(func() {
+		TimeStamp = time.Now().UnixNano() / 1000
+		var ticker = time.NewTicker(time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				TimeStamp = time.Now().UnixNano() / 1000
+			case <-stopChannel:
+				return
+			}
+		}
+	})
 }
