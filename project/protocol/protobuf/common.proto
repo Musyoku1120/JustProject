@@ -1,0 +1,10 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+message PlayerLoginC2S {
+	int32 PlayerId = 1;
+}
+
+message PlayerLoginS2C {
+	int32 Error = 1;
+}
