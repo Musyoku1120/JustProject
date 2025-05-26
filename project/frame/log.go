@@ -152,7 +152,7 @@ func (r *Log) start() {
 				}
 			}
 
-			for i := 0; i < r.buffSize; i++ {
+			for i := 0; i < r.loggerCount; i++ {
 				if fl, ok := r.logger[i].(*FileLogger); ok {
 					if fl.file != nil {
 						_ = fl.file.Close()
