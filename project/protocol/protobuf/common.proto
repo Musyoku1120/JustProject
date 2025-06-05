@@ -2,7 +2,7 @@ syntax = "proto3";
 option go_package = "./pb";
 
 message PlayerLoginC2S {
-	int32 PlayerId = 1;
+	int32 RoleId = 1;
 }
 
 message PlayerLoginS2C {

@@ -26,7 +26,7 @@ var (
 var defaultLogger *Log
 
 func init() {
-	defaultLogger = NewLog(10000, &ConsoleLogger{})
+	defaultLogger = NewLog(10240, &ConsoleLogger{}, &FileLogger{Path: "log/frame.log"})
 	defaultLogger.SetLevel(LogLevelError)
 
 	Gogo(func() {

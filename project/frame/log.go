@@ -170,11 +170,11 @@ func (r *Log) initFileLogger(f *FileLogger) *FileLogger {
 	f.extensionName = path.Ext(f.Path)
 	f.dictionaryName = path.Dir(f.Path)
 	f.fileName = filepath.Base(f.Path[:len(f.Path)-len(f.extensionName)])
-	err := os.MkdirAll(f.Path, os.ModePerm)
+	err := os.MkdirAll(f.dictionaryName, os.ModePerm)
 	if err != nil {
 		return nil
 	}
-	file, err := os.OpenFile(f.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(f.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return nil
 	}
@@ -192,7 +192,7 @@ func (r *Log) initFileLogger(f *FileLogger) *FileLogger {
 		case <-timer.C:
 		}
 		timer.Stop()
-		r.recoverChannel <- f
+		r.recoverChannel <- f // 小时制回收
 	})
 
 	return f
