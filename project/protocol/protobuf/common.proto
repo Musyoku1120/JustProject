@@ -1,6 +1,11 @@
 syntax = "proto3";
 option go_package = "./pb";
 
+enum ProtocolId {
+	Null = 0;
+	Login = 1; // req: LoginC2S, res: LoginS2C
+}
+
 message PlayerLoginC2S {
 	int32 RoleId = 1;
 }
