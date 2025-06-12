@@ -4,12 +4,19 @@ option go_package = "./pb";
 enum ProtocolId {
 	Null = 0;
 	Login = 1; // req: LoginC2S, res: LoginS2C
+	Common = 2; // req: CommonC2S, res: CommonS2C
 }
 
-message PlayerLoginC2S {
+message LoginC2S {
 	int32 RoleId = 1;
 }
+message LoginS2C {
+	int32 Error = 1;
+}
 
-message PlayerLoginS2C {
+message CommonC2S {
+	int32 RoleId = 1;
+}
+message CommonS2C {
 	int32 Error = 1;
 }
