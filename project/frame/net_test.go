@@ -1,31 +1,41 @@
 package frame
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net"
+	"project/protocol/generate/pb"
 	"sync"
 	"testing"
 	"time"
 )
 
-func TestTcpMsgQue_ReadWrite(t *testing.T) {
+func Test_TcpMsgQue(t *testing.T) {
 	// 动态获取可用端口
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal("动态端口获取失败:", err)
 	}
 	addr := listener.Addr().String()
-	listener.Close() // 释放临时监听器
+	_ = listener.Close() // 释放临时监听器
 
 	// 使用通道同步服务器启动状态
 	serverReady := make(chan struct{})
 	var serverErr error
 
-	handler := msgHandler{id2Handler: map[int32]HandlerFunc{
-		1: func(data []byte) bool {
-			t.Logf("收到消息: %v", data)
-			return true
-		},
-	}}
+	msgHandler := NewMsgHandler()
+	//msgHandler.AddHandler(1, func(body []byte) bool {
+	//	t.Log("收到消息:", body)
+	//	return true
+	//})
+	msgHandler.AddHandlers(CSHandlerMap)
+	CSHandlerObj.HandlerLogin = func(req *pb.LoginC2S) error {
+		LogInfo("HandlerLogin: %v", req)
+		return nil
+	}
+	CSHandlerObj.HandlerCommon = func(req *pb.CommonC2S) error {
+		LogInfo("HandlerCommon: %v", req)
+		return nil
+	}
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -33,7 +43,7 @@ func TestTcpMsgQue_ReadWrite(t *testing.T) {
 	// 启动服务器
 	go func() {
 		defer wg.Done()
-		serverErr = TcpListen(addr, handler)
+		serverErr = TcpListen(addr, msgHandler)
 		close(serverReady) // 通知服务器已启动（无论成功与否）
 	}()
 
@@ -50,7 +60,7 @@ func TestTcpMsgQue_ReadWrite(t *testing.T) {
 	// 启动客户端
 	go func() {
 		defer wg.Done()
-		mq := newTcpConnect("tcp", addr, handler)
+		mq := newTcpConnect("tcp", addr, msgHandler)
 		mq.Reconnect(0) // 立即连接
 
 		// 连接状态检查
@@ -61,30 +71,37 @@ func TestTcpMsgQue_ReadWrite(t *testing.T) {
 			time.Sleep(1 * time.Second)
 		}
 		if mq.conn == nil {
-			t.Fatal("连接未建立")
+			t.Error("连接未建立")
 		}
 
 		// 发送消息
-		// 修改客户端发送逻辑
 		msg := &Message{
 			Head: &MessageHead{ProtoId: 1, Length: 3},
-			Body: []byte{0x01, 0x02, 0x03},
+			//Body: []byte{0x01, 0x02, 0x03},
 		}
+
+		msg.Body, _ = proto.Marshal(&pb.LoginC2S{RoleId: 123})
+		msg.Head.Length = uint32(len(msg.Body))
+
 		if msg.Bytes() == nil {
-			t.Fatal("消息编码失败")
+			t.Error("消息编码失败")
 		}
-		if !mq.SendMsg(msg) {
+		if !mq.Send(msg) {
 			t.Error("消息发送失败")
 		}
 
 		msg = &Message{
-			Head: &MessageHead{ProtoId: 1, Length: 3},
-			Body: []byte{0x02, 0x03, 0x04},
+			Head: &MessageHead{ProtoId: 2, Length: 3},
+			//Body: []byte{0x02, 0x03, 0x04},
 		}
+
+		msg.Body, _ = proto.Marshal(&pb.CommonC2S{RoleId: 123})
+		msg.Head.Length = uint32(len(msg.Body))
+
 		if msg.Bytes() == nil {
-			t.Fatal("消息编码失败")
+			t.Error("消息编码失败")
 		}
-		if !mq.SendMsg(msg) {
+		if !mq.Send(msg) {
 			t.Error("消息发送失败")
 		}
 

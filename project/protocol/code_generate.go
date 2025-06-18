@@ -115,11 +115,30 @@ import (
 	"project/frame"
 )
 
+var CSHandlerObj *CSHandler
+var CSHandlerMap map[int32]frame.HandlerFunc
 `)
+	builder.WriteString(`
+func init()  {
+	CSHandlerObj = &CSHandler{}
+	CSHandlerMap = map[int32]frame.HandlerFunc{
+`)
+
+	for i, fn := range protocols {
+		if i > 0 {
+			builder.WriteString("\n")
+		}
+		builder.WriteString(fmt.Sprintf("\t\t%v : CSHandlerObj.On%v,", fn.ID, fn.Name))
+	}
+	builder.WriteString(`
+	}
+}`)
+	builder.WriteString("\n")
+
 	builder.WriteString("type CSHandler struct {")
 	builder.WriteString("\n")
 	for _, fn := range protocols {
-		builder.WriteString(fmt.Sprintf("\t%s func(body []byte) error", fn.Name))
+		builder.WriteString(fmt.Sprintf("\t%s func(req *pb.%v) error", fn.Name, fn.Req))
 		builder.WriteString("\n")
 	}
 	builder.WriteString("}")
@@ -127,20 +146,19 @@ import (
 
 	for _, fn := range protocols {
 		builder.WriteString(fmt.Sprintf(`
-func (h *CSHandler) Bef%s(body []byte) error {
-	req := &pb.%s{}
+func (h *CSHandler) On%v(body []byte) bool {
+	req := &pb.%v{}
 	if err := proto.Unmarshal(body, req); err != nil {
 		frame.LogError("Failed to unmarshal protoId: %v, err: %%v", err)
-		return err
+		return false
 	}
 	frame.LogDebug("Received protoId: %v, req: %%v", req.String())
-	return nil
-}`, fn.Name, fn.Req, fn.ID, fn.ID))
-		builder.WriteString(fmt.Sprintf(`
-func (h *CSHandler) Aft%s(res *pb.%s) error {
-	frame.LogDebug("Processed protoId: %v, res: %%v", res.String())
-	return nil
-}`, fn.Name, fn.Res, fn.ID))
+	if err := h.%v(req); err != nil {
+		frame.LogError("Failed to handle protoId: %v, err: %%v", err)
+		return false
+	}
+	return true
+}`, fn.Name, fn.Req, fn.ID, fn.ID, fn.Name, fn.ID))
 		builder.WriteString("\n")
 	}
 

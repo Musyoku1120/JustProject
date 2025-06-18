@@ -9,14 +9,14 @@ type msgQue struct {
 	stopFlag     int32 // CAS_Int32
 	writeChannel chan *Message
 	lastTick     int64
-	msgHandler
+	*MsgHandler
 }
 
 func (r *msgQue) IsStop() bool {
 	return r.stopFlag == 1
 }
 
-func (r *msgQue) SendMsg(msg *Message) (rp bool) {
+func (r *msgQue) Send(msg *Message) (rp bool) {
 	if r.IsStop() || msg == nil {
 		return false
 	}
@@ -57,7 +57,7 @@ func (r *msgQue) processMsg(msg *Message) (rp bool) {
 	rp = true
 	// 同步模式 收到消息即处理
 	TryIt(func() {
-		fun := r.msgHandler.GetHandler(int32(msg.Head.ProtoId))
+		fun := r.MsgHandler.GetHandler(int32(msg.Head.ProtoId))
 		if fun != nil {
 			rp = fun(msg.Body)
 		} else {
@@ -69,7 +69,7 @@ func (r *msgQue) processMsg(msg *Message) (rp bool) {
 
 type IMsgQueue interface {
 	Stop()
-	SendMsg(msg *Message) (rep bool)
+	Send(msg *Message) (rep bool)
 	read()
 	write()
 }

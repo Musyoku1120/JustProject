@@ -30,13 +30,13 @@ func init() {
 	defaultLogger.SetLevel(LogLevelError)
 
 	Gogo(func() {
-		TimeStamp = time.Now().UnixNano() / 1000
-		var ticker = time.NewTicker(time.Millisecond)
+		TimeStamp = time.Now().UnixNano() / 1e9
+		var ticker = time.NewTicker(333 * time.Millisecond)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
-				TimeStamp = time.Now().UnixNano() / 1000
+				TimeStamp = time.Now().UnixNano() / 1e9
 			case <-stopChannel:
 				return
 			}

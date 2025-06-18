@@ -123,13 +123,13 @@ func (r *wsMsgQue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newWsConnect(address string, handler msgHandler) *wsMsgQue {
+func newWsConnect(address string, handler *MsgHandler) *wsMsgQue {
 	mq := &wsMsgQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
-			msgHandler:   handler,
+			MsgHandler:   handler,
 		},
 		conn:    nil,
 		address: address,
@@ -141,13 +141,13 @@ func newWsConnect(address string, handler msgHandler) *wsMsgQue {
 }
 
 // 构造接受连接对象 来自http的upgrade
-func newWsAccept(conn *websocket.Conn, handler msgHandler) *wsMsgQue {
+func newWsAccept(conn *websocket.Conn, handler *MsgHandler) *wsMsgQue {
 	mq := &wsMsgQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
-			msgHandler:   handler,
+			MsgHandler:   handler,
 		},
 		conn: conn,
 	}
@@ -157,7 +157,7 @@ func newWsAccept(conn *websocket.Conn, handler msgHandler) *wsMsgQue {
 	return mq
 }
 
-func WsListen(requestUrl string, handler msgHandler) {
+func WsListen(requestUrl string, handler *MsgHandler) {
 	wsUpgrader := websocket.Upgrader{
 		ReadBufferSize:  4096,
 		WriteBufferSize: 4096,
