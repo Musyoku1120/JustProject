@@ -111,8 +111,8 @@ package protocol
 
 import (
 	"google.golang.org/protobuf/proto"
-	"project/protocol/generate/pb"
-	"project/frame"
+	"server/protocol/generate/pb"
+	"server/frame"
 )
 
 var CSHandlerObj *CSHandler

@@ -12,12 +12,8 @@ type msgQue struct {
 	*MsgHandler
 }
 
-func (r *msgQue) IsStop() bool {
-	return r.stopFlag == 1
-}
-
 func (r *msgQue) Send(msg *Message) (rp bool) {
-	if r.IsStop() || msg == nil {
+	if msg == nil || r.stopFlag == 1 {
 		return false
 	}
 	defer func() {
@@ -29,7 +25,7 @@ func (r *msgQue) Send(msg *Message) (rp bool) {
 	select {
 	case r.writeChannel <- msg:
 	default:
-		LogInfo("msqQueue[%v] channel full", r.uid)
+		LogWarn("msqQueue[%v] channel full", r.uid)
 		r.writeChannel <- msg
 	}
 	return true
@@ -68,6 +64,7 @@ func (r *msgQue) processMsg(msg *Message) (rp bool) {
 }
 
 type IMsgQueue interface {
+	IsStop() bool
 	Stop()
 	Send(msg *Message) (rep bool)
 	read()

@@ -85,12 +85,16 @@ type Log struct {
 }
 
 func (r *Log) IsStop() bool {
+	if r.stopFlag == 0 && LogEnd() {
+		r.Stop()
+	}
 	return r.stopFlag == 1
 }
 
 func (r *Log) Stop() {
 	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
 		close(r.writeChannel)
+		close(r.recoverChannel)
 	}
 }
 
@@ -113,7 +117,23 @@ func (r *Log) write(levelStr string, level LogLevel, params ...interface{}) {
 }
 
 func (r *Log) start() {
-	goForLog(func() {
+	systemGo(func(stopCh chan struct{}) {
+		defer func() {
+			for str := range r.writeChannel {
+				for i := 0; i < r.loggerCount; i++ {
+					r.logger[i].LogWrite(str)
+				}
+			}
+			for i := 0; i < r.loggerCount; i++ {
+				if fl, ok := r.logger[i].(*FileLogger); ok {
+					if fl.file != nil {
+						_ = fl.file.Close()
+						fl.file = nil
+					}
+				}
+			}
+		}()
+
 		for !r.IsStop() {
 			select {
 			case str, ok := <-r.writeChannel:
@@ -138,27 +158,15 @@ func (r *Log) start() {
 					Gogo(func() {
 						timer := time.NewTimer(time.Duration(timeout) * time.Second)
 						select {
+						case <-stopChForGo:
 						case <-timer.C:
+							timer.Stop()
+							r.recoverChannel <- fl
 						}
-						timer.Stop()
-						r.recoverChannel <- fl
 					})
 				}
-			}
-
-			for str := range r.writeChannel {
-				for i := 0; i < r.loggerCount; i++ {
-					r.logger[i].LogWrite(str)
-				}
-			}
-
-			for i := 0; i < r.loggerCount; i++ {
-				if fl, ok := r.logger[i].(*FileLogger); ok {
-					if fl.file != nil {
-						_ = fl.file.Close()
-						fl.file = nil
-					}
-				}
+			case <-stopCh:
+				r.Stop()
 			}
 		}
 	})
@@ -189,10 +197,11 @@ func (r *Log) initFileLogger(f *FileLogger) *FileLogger {
 	Gogo(func() {
 		timer := time.NewTimer(time.Duration(timeout) * time.Second)
 		select {
+		case <-stopChForGo:
 		case <-timer.C:
+			timer.Stop()
+			r.recoverChannel <- f // 小时制回收
 		}
-		timer.Stop()
-		r.recoverChannel <- f // 小时制回收
 	})
 
 	return f
@@ -232,9 +241,10 @@ func (r *Log) Error(params ...interface{}) {
 
 func NewLog(buffSize int, loggers ...ILogger) *Log {
 	logObject := &Log{
-		loggerCount:  0,
-		buffSize:     buffSize,
-		writeChannel: make(chan string, buffSize),
+		loggerCount:    0,
+		buffSize:       buffSize,
+		writeChannel:   make(chan string, buffSize),
+		recoverChannel: make(chan *FileLogger, 32),
 	}
 	for _, logger := range loggers {
 		if logObject.loggerCount == 8 {

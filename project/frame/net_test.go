@@ -3,7 +3,7 @@ package frame
 import (
 	"google.golang.org/protobuf/proto"
 	"net"
-	"project/protocol/generate/pb"
+	"server/protocol/generate/pb"
 	"sync"
 	"testing"
 	"time"

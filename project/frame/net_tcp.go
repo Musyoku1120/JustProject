@@ -17,6 +17,13 @@ type tcpMsqQue struct {
 	connecting int32
 }
 
+func (r *tcpMsqQue) IsStop() bool {
+	if r.stopFlag == 0 && Stop() {
+		r.Stop()
+	}
+	return r.stopFlag == 1
+}
+
 func (r *tcpMsqQue) Stop() {
 	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
 		r.baseStop()
@@ -89,12 +96,11 @@ func (r *tcpMsqQue) write() {
 	for !r.IsStop() || msg != nil {
 		if msg == nil {
 			select {
+			case <-stopChForGo:
 			case msg = <-r.writeChannel:
 				if msg != nil {
 					body = msg.Bytes()
 				}
-			case <-stopChannel:
-				// do nothing
 			case <-tick.C:
 				if r.isTimeout(tick) {
 					r.Stop()

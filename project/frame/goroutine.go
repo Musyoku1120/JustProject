@@ -14,25 +14,26 @@ func Gogo(fn func()) {
 		}
 	}
 
-	waitAll.Add(1)
+	waitAllGo.Add(1)
 	atomic.AddUint32(&goUid, 1)
 	atomic.AddInt32(&goCount, 1)
 
 	go func() {
+		defer waitAllGo.Done()
 		// 优先执行当前
 		TryIt(fn, nil)
 		// 加入等待队列
 		for pc <= poolSize {
 			select {
-			case <-stopChannel:
+			case <-stopChForGo:
 				pc = poolSize + 1
-			case fun := <-poolChan:
+			case fun := <-poolChan: // 无缓冲区通道 进入case后陷入阻塞
 				TryIt(fun, nil)
 			}
 		}
 		// 生命周期
-		waitAll.Done()
-		atomic.AddInt32(&goCount, -1)
+		cnt := atomic.AddInt32(&goCount, -1)
+		LogDebug("goroutine: %v exit", cnt+1)
 	}()
 }
 
@@ -48,10 +49,10 @@ func TryIt(fun func(), catch func(interface{})) {
 	fun()
 }
 
-func goForLog(fn func()) {
-	waitAll.Add(1)
+func systemGo(fn func(stopCh chan struct{})) {
+	waitAllSys.Add(1)
 	go func() {
-		fn()
-		waitAll.Done()
+		fn(stopChForSys)
+		waitAllSys.Done()
 	}()
 }
