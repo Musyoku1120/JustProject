@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
 	"server/frame"
+	"time"
 )
 
 type LoginReq struct {
@@ -26,17 +28,25 @@ func main() {
 	CacheAccount = make(map[string]int32)
 	CacheSession = make(map[string]int32)
 
-	go (func() {
-		eo := echo.New()
-		eoGroup := eo.Group("/auth")
-		eoGroup.POST("/login", httpLogin)
-		eoGroup.POST("/enter", httpEnter)
-		if err := eo.Start("127.0.0.1:1120"); err != nil {
-			panic(err)
-		}
-	})()
+	go Start()
 
 	frame.WaitForExit()
+}
+
+func Start() {
+	eo := echo.New()
+	eoGroup := eo.Group("/auth")
+	eoGroup.POST("/login", httpLogin)
+	eoGroup.POST("/enter", httpEnter)
+	if err := eo.Start("127.0.0.1:1120"); err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		cancel()
+		_ = eo.Shutdown(ctx)
+	}()
 }
 
 func MD5Bytes(s []byte) string {

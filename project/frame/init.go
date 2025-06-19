@@ -47,7 +47,6 @@ func WaitForExit() {
 	signal.Notify(stopChForSignal, os.Interrupt, os.Kill, syscall.SIGTERM)
 	select {
 	case <-stopChForSignal:
-		close(stopChForSignal)
 		// 关闭网络交互
 		if !atomic.CompareAndSwapInt32(&globalStop, 0, 1) {
 			return
@@ -63,12 +62,14 @@ func WaitForExit() {
 		}
 		close(stopChForSys)
 		waitAllSys.Wait()
+
+		close(stopChForSignal)
 		os.Exit(0)
 	}
 }
 
 func init() {
-	defaultLogger = NewLog(10240, &ConsoleLogger{}, &FileLogger{Path: "log/frame.log"})
+	defaultLogger = NewLog(10240, &ConsoleLogger{}, &FileLogger{Path: "D:/ServerLog/server.log"})
 	defaultLogger.SetLevel(LogLevelError)
 
 	Gogo(func() {
