@@ -35,7 +35,7 @@ var (
 
 var defaultLogger *Log
 
-func Stop() bool {
+func ServerEnd() bool {
 	return globalStop == 1
 }
 
@@ -47,6 +47,8 @@ func WaitForExit() {
 	signal.Notify(stopChForSignal, os.Interrupt, os.Kill, syscall.SIGTERM)
 	select {
 	case <-stopChForSignal:
+		close(stopChForSignal)
+
 		// 关闭网络交互
 		if !atomic.CompareAndSwapInt32(&globalStop, 0, 1) {
 			return
@@ -62,8 +64,6 @@ func WaitForExit() {
 		}
 		close(stopChForSys)
 		waitAllSys.Wait()
-
-		close(stopChForSignal)
 		os.Exit(0)
 	}
 }

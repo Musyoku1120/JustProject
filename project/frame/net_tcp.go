@@ -17,19 +17,6 @@ type tcpMsqQue struct {
 	connecting int32
 }
 
-func (r *tcpMsqQue) IsStop() bool {
-	if r.stopFlag == 0 && Stop() {
-		r.Stop()
-	}
-	return r.stopFlag == 1
-}
-
-func (r *tcpMsqQue) Stop() {
-	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
-		r.baseStop()
-	}
-}
-
 func (r *tcpMsqQue) read() {
 	defer func() {
 		r.waitGroup.Done()
@@ -50,7 +37,7 @@ func (r *tcpMsqQue) read() {
 			_, err := io.ReadFull(r.conn, headData)
 			if err != nil {
 				if err != io.EOF {
-					LogError("recv data err:%v", err)
+					LogError("receive data err:%v", err)
 				}
 				LogError("read head err:%v\n", err)
 				break
@@ -213,9 +200,13 @@ func TcpListen(address string, handler *MsgHandler) error {
 		LogError("tcp listen err:%v", lErr)
 		return lErr
 	}
-	Gogo(func() {
+	go func() {
+		defer func() {
+			_ = listener.Close()
+		}()
+
 		for {
-			conn, err := listener.Accept()
+			conn, err := listener.Accept() // 阻塞式 单独启动一个goroutine
 			if err != nil {
 				LogError("tcpMsqQue listener accept err:%v", err)
 				continue
@@ -232,6 +223,6 @@ func TcpListen(address string, handler *MsgHandler) error {
 				LogInfo("from listen accept tcp[%v] write end", mq.uid)
 			})
 		}
-	})
+	}()
 	return nil
 }

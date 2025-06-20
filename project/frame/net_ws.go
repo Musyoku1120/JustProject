@@ -15,19 +15,6 @@ type wsMsgQue struct {
 	connecting int32
 }
 
-func (r *wsMsgQue) IsStop() bool {
-	if r.stopFlag == 0 && Stop() {
-		r.Stop()
-	}
-	return r.stopFlag == 1
-}
-
-func (r *wsMsgQue) Stop() {
-	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
-		r.baseStop()
-	}
-}
-
 func (r *wsMsgQue) read() {
 	defer func() {
 		if err := recover(); err != nil {

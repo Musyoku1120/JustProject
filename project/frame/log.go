@@ -119,11 +119,13 @@ func (r *Log) write(levelStr string, level LogLevel, params ...interface{}) {
 func (r *Log) start() {
 	systemGo(func(stopCh chan struct{}) {
 		defer func() {
+			// 处理剩余日志
 			for str := range r.writeChannel {
 				for i := 0; i < r.loggerCount; i++ {
 					r.logger[i].LogWrite(str)
 				}
 			}
+			// 关闭文件句柄
 			for i := 0; i < r.loggerCount; i++ {
 				if fl, ok := r.logger[i].(*FileLogger); ok {
 					if fl.file != nil {
@@ -137,36 +139,39 @@ func (r *Log) start() {
 		for !r.IsStop() {
 			select {
 			case str, ok := <-r.writeChannel:
-				if ok {
-					for i := 0; i < r.loggerCount; i++ {
-						r.logger[i].LogWrite(str)
-					}
+				if !ok {
+					break
 				}
-			case fl, ok := <-r.recoverChannel:
-				if ok {
-					_ = fl.file.Close()
-					fl.file = nil
-					newPath := fl.dictionaryName + "/" + fl.fileName + GenLogFileName() + fl.extensionName
-					_ = os.Rename(fl.Path, newPath)
-					file, err := os.OpenFile(fl.Path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
-					if err == nil {
-						fl.file = file
-					}
-					fl.size = 0
+				for i := 0; i < r.loggerCount; i++ {
+					r.logger[i].LogWrite(str)
+				}
 
-					timeout := GetNextHourIntervalS()
-					Gogo(func() {
-						timer := time.NewTimer(time.Duration(timeout) * time.Second)
-						select {
-						case <-stopChForGo:
-						case <-timer.C:
-							timer.Stop()
-							r.recoverChannel <- fl
-						}
-					})
+			case fl, ok := <-r.recoverChannel:
+				if !ok {
+					break
 				}
-			case <-stopCh:
-				r.Stop()
+				_ = fl.file.Close()
+				fl.file = nil
+
+				// 轮换新文件名
+				newPath := fl.dictionaryName + "/" + fl.fileName + GenLogFileName() + fl.extensionName
+				_ = os.Rename(fl.Path, newPath)
+				file, err := os.OpenFile(fl.Path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+				if err == nil {
+					fl.file = file
+				}
+				fl.size = 0
+
+				timeout := GetNextHourIntervalS()
+				Gogo(func() {
+					timer := time.NewTimer(time.Duration(timeout) * time.Second)
+					select {
+					case <-stopChForGo:
+					case <-timer.C:
+						timer.Stop()
+						r.recoverChannel <- fl
+					}
+				})
 			}
 		}
 	})

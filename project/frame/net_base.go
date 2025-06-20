@@ -1,6 +1,7 @@
 package frame
 
 import (
+	"sync/atomic"
 	"time"
 )
 
@@ -25,7 +26,7 @@ func (r *msgQue) Send(msg *Message) (rp bool) {
 	select {
 	case r.writeChannel <- msg:
 	default:
-		LogWarn("msqQueue[%v] channel full", r.uid)
+		LogWarn("msqQueue[%v] channel full", r.uid) // 非阻塞式发送
 		r.writeChannel <- msg
 	}
 	return true
@@ -40,13 +41,20 @@ func (r *msgQue) isTimeout(tick *time.Timer) bool {
 	return true
 }
 
-func (r *msgQue) baseStop() {
-	if r.writeChannel != nil {
-		close(r.writeChannel)
+func (r *msgQue) IsStop() bool {
+	if ServerEnd() {
+		r.Stop()
 	}
-	msgQueLock.Lock()
-	delete(msgQueMap, r.uid)
-	msgQueLock.Unlock()
+	return r.stopFlag == 1
+}
+
+func (r *msgQue) Stop() {
+	if atomic.CompareAndSwapInt32(&r.stopFlag, 0, 1) {
+		close(r.writeChannel)
+		msgQueLock.Lock()
+		delete(msgQueMap, r.uid)
+		msgQueLock.Unlock()
+	}
 }
 
 func (r *msgQue) processMsg(msg *Message) (rp bool) {
@@ -64,8 +72,6 @@ func (r *msgQue) processMsg(msg *Message) (rp bool) {
 }
 
 type IMsgQueue interface {
-	IsStop() bool
-	Stop()
 	Send(msg *Message) (rep bool)
 	read()
 	write()

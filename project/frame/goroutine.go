@@ -21,7 +21,7 @@ func Gogo(fn func()) {
 	go func() {
 		defer waitAllGo.Done()
 		// 优先执行当前
-		TryIt(fn, nil)
+		TryIt(fn, nil) // 循环任务会导致wait阻塞
 		// 加入等待队列
 		for pc <= poolSize {
 			select {

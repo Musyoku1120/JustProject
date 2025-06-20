@@ -13,7 +13,7 @@ func Test_TcpMsgQue(t *testing.T) {
 	// 动态获取可用端口
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatal("动态端口获取失败:", err)
+		t.Fatal("port got:", err)
 	}
 	addr := listener.Addr().String()
 	_ = listener.Close() // 释放临时监听器
@@ -51,10 +51,10 @@ func Test_TcpMsgQue(t *testing.T) {
 	select {
 	case <-serverReady:
 		if serverErr != nil {
-			t.Fatal("服务器启动失败:", serverErr)
+			t.Fatal("server start failed:", serverErr)
 		}
 	case <-time.After(2 * time.Second):
-		t.Fatal("服务器启动超时")
+		t.Fatal("server start timeout")
 	}
 
 	// 启动客户端
@@ -71,7 +71,7 @@ func Test_TcpMsgQue(t *testing.T) {
 			time.Sleep(1 * time.Second)
 		}
 		if mq.conn == nil {
-			t.Error("连接未建立")
+			t.Error("connect failed")
 		}
 
 		// 发送消息
@@ -79,30 +79,26 @@ func Test_TcpMsgQue(t *testing.T) {
 			Head: &MessageHead{ProtoId: 1, Length: 3},
 			//Body: []byte{0x01, 0x02, 0x03},
 		}
-
 		msg.Body, _ = proto.Marshal(&pb.LoginC2S{RoleId: 123})
 		msg.Head.Length = uint32(len(msg.Body))
-
 		if msg.Bytes() == nil {
-			t.Error("消息编码失败")
+			t.Error("message encode failed")
 		}
 		if !mq.Send(msg) {
-			t.Error("消息发送失败")
+			t.Error("message send failed")
 		}
 
 		msg = &Message{
 			Head: &MessageHead{ProtoId: 2, Length: 3},
 			//Body: []byte{0x02, 0x03, 0x04},
 		}
-
 		msg.Body, _ = proto.Marshal(&pb.CommonC2S{RoleId: 123})
 		msg.Head.Length = uint32(len(msg.Body))
-
 		if msg.Bytes() == nil {
-			t.Error("消息编码失败")
+			t.Error("message encode failed")
 		}
 		if !mq.Send(msg) {
-			t.Error("消息发送失败")
+			t.Error("message send failed")
 		}
 
 		// 等待消息处理
