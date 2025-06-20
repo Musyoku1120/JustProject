@@ -10,7 +10,7 @@ import (
 
 type tcpMsqQue struct {
 	msgQue
-	conn       net.Conn
+	conn       *net.TCPConn
 	waitGroup  sync.WaitGroup
 	netType    string
 	address    string
@@ -127,7 +127,9 @@ func (r *tcpMsqQue) connect() {
 		r.Stop()
 		return
 	}
-	r.conn = conn
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		r.conn = tcpConn
+	}
 	atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
 	Gogo(func() {
 		LogInfo("from connect dial tcp[%v] read start", r.uid)
@@ -178,7 +180,7 @@ func newTcpConnect(netType string, address string, handler *MsgHandler) *tcpMsqQ
 }
 
 // 构造接受连接对象 tcp.Accept
-func newTcpAccept(conn net.Conn, handler *MsgHandler) *tcpMsqQue {
+func newTcpAccept(conn *net.TCPConn, handler *MsgHandler) *tcpMsqQue {
 	mq := &tcpMsqQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
@@ -195,18 +197,23 @@ func newTcpAccept(conn net.Conn, handler *MsgHandler) *tcpMsqQue {
 }
 
 func TcpListen(address string, handler *MsgHandler) error {
-	listener, lErr := net.Listen("tcp", address)
+	tcpAddr, rErr := net.ResolveTCPAddr("tcp", address)
+	if rErr != nil {
+		LogError("tcp addr resolve err:%v", rErr)
+		return rErr
+	}
+	listener, lErr := net.ListenTCP("tcp", tcpAddr)
 	if lErr != nil {
 		LogError("tcp listen err:%v", lErr)
 		return lErr
 	}
+
 	go func() {
 		defer func() {
 			_ = listener.Close()
 		}()
-
 		for {
-			conn, err := listener.Accept() // 阻塞式 单独启动一个goroutine
+			conn, err := listener.AcceptTCP() // 阻塞式 单独启动一个goroutine
 			if err != nil {
 				LogError("tcpMsqQue listener accept err:%v", err)
 				continue
