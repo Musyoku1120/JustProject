@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/labstack/echo"
 	"net/http"
+	"os"
+	"path/filepath"
 	"server/frame"
 	"time"
 )
@@ -24,6 +26,12 @@ var (
 )
 
 func main() {
+	wd, _ := os.Getwd()
+	configPath := filepath.Join(wd, "/server/auth/global.yml")
+
+	frame.InitConfig(configPath)
+	frame.Init()
+
 	frame.LogInfo("start auth")
 	CacheAccount = make(map[string]int32)
 	CacheSession = make(map[string]int32)

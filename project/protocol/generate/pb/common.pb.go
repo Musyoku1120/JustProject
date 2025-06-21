@@ -70,6 +70,74 @@ func (ProtocolId) EnumDescriptor() ([]byte, []int) {
 	return file_common_proto_rawDescGZIP(), []int{0}
 }
 
+type ServerInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int32                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
+	Address       string                 `protobuf:"bytes,3,opt,name=Address,proto3" json:"Address,omitempty"`
+	MsgHandlers   []int32                `protobuf:"varint,4,rep,packed,name=MsgHandlers,proto3" json:"MsgHandlers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ServerInfo) Reset() {
+	*x = ServerInfo{}
+	mi := &file_common_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServerInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServerInfo) ProtoMessage() {}
+
+func (x *ServerInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServerInfo.ProtoReflect.Descriptor instead.
+func (*ServerInfo) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ServerInfo) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *ServerInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ServerInfo) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *ServerInfo) GetMsgHandlers() []int32 {
+	if x != nil {
+		return x.MsgHandlers
+	}
+	return nil
+}
+
 type LoginC2S struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoleId        int32                  `protobuf:"varint,1,opt,name=RoleId,proto3" json:"RoleId,omitempty"`
@@ -79,7 +147,7 @@ type LoginC2S struct {
 
 func (x *LoginC2S) Reset() {
 	*x = LoginC2S{}
-	mi := &file_common_proto_msgTypes[0]
+	mi := &file_common_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -91,7 +159,7 @@ func (x *LoginC2S) String() string {
 func (*LoginC2S) ProtoMessage() {}
 
 func (x *LoginC2S) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[0]
+	mi := &file_common_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -104,7 +172,7 @@ func (x *LoginC2S) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginC2S.ProtoReflect.Descriptor instead.
 func (*LoginC2S) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{0}
+	return file_common_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *LoginC2S) GetRoleId() int32 {
@@ -123,7 +191,7 @@ type LoginS2C struct {
 
 func (x *LoginS2C) Reset() {
 	*x = LoginS2C{}
-	mi := &file_common_proto_msgTypes[1]
+	mi := &file_common_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -135,7 +203,7 @@ func (x *LoginS2C) String() string {
 func (*LoginS2C) ProtoMessage() {}
 
 func (x *LoginS2C) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[1]
+	mi := &file_common_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -148,7 +216,7 @@ func (x *LoginS2C) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginS2C.ProtoReflect.Descriptor instead.
 func (*LoginS2C) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{1}
+	return file_common_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *LoginS2C) GetError() int32 {
@@ -167,7 +235,7 @@ type CommonC2S struct {
 
 func (x *CommonC2S) Reset() {
 	*x = CommonC2S{}
-	mi := &file_common_proto_msgTypes[2]
+	mi := &file_common_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -179,7 +247,7 @@ func (x *CommonC2S) String() string {
 func (*CommonC2S) ProtoMessage() {}
 
 func (x *CommonC2S) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[2]
+	mi := &file_common_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -192,7 +260,7 @@ func (x *CommonC2S) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommonC2S.ProtoReflect.Descriptor instead.
 func (*CommonC2S) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{2}
+	return file_common_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CommonC2S) GetRoleId() int32 {
@@ -211,7 +279,7 @@ type CommonS2C struct {
 
 func (x *CommonS2C) Reset() {
 	*x = CommonS2C{}
-	mi := &file_common_proto_msgTypes[3]
+	mi := &file_common_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -223,7 +291,7 @@ func (x *CommonS2C) String() string {
 func (*CommonS2C) ProtoMessage() {}
 
 func (x *CommonS2C) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[3]
+	mi := &file_common_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -236,7 +304,7 @@ func (x *CommonS2C) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommonS2C.ProtoReflect.Descriptor instead.
 func (*CommonS2C) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{3}
+	return file_common_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CommonS2C) GetError() int32 {
@@ -250,7 +318,13 @@ var File_common_proto protoreflect.FileDescriptor
 
 const file_common_proto_rawDesc = "" +
 	"\n" +
-	"\fcommon.proto\"\"\n" +
+	"\fcommon.proto\"l\n" +
+	"\n" +
+	"ServerInfo\x12\x0e\n" +
+	"\x02Id\x18\x01 \x01(\x05R\x02Id\x12\x12\n" +
+	"\x04Name\x18\x02 \x01(\tR\x04Name\x12\x18\n" +
+	"\aAddress\x18\x03 \x01(\tR\aAddress\x12 \n" +
+	"\vMsgHandlers\x18\x04 \x03(\x05R\vMsgHandlers\"\"\n" +
 	"\bLoginC2S\x12\x16\n" +
 	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\" \n" +
 	"\bLoginS2C\x12\x14\n" +
@@ -279,13 +353,14 @@ func file_common_proto_rawDescGZIP() []byte {
 }
 
 var file_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_common_proto_goTypes = []any{
-	(ProtocolId)(0),   // 0: ProtocolId
-	(*LoginC2S)(nil),  // 1: LoginC2S
-	(*LoginS2C)(nil),  // 2: LoginS2C
-	(*CommonC2S)(nil), // 3: CommonC2S
-	(*CommonS2C)(nil), // 4: CommonS2C
+	(ProtocolId)(0),    // 0: ProtocolId
+	(*ServerInfo)(nil), // 1: ServerInfo
+	(*LoginC2S)(nil),   // 2: LoginC2S
+	(*LoginS2C)(nil),   // 3: LoginS2C
+	(*CommonC2S)(nil),  // 4: CommonC2S
+	(*CommonS2C)(nil),  // 5: CommonS2C
 }
 var file_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -306,7 +381,7 @@ func file_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_proto_rawDesc), len(file_common_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

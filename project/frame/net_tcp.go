@@ -131,6 +131,7 @@ func (r *tcpMsqQue) connect() {
 		r.conn = tcpConn
 	}
 	atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
+
 	Gogo(func() {
 		LogInfo("from connect dial tcp[%v] read start", r.uid)
 		r.read()

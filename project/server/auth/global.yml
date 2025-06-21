@@ -1,0 +1,6 @@
+UniqueId: 1
+ServerName: gate
+LogPath: D:/ServerLog/server.log
+Servers:
+  GateAddress: 127.0.0.1:2120
+  GameAddress: 127.0.0.1:3120

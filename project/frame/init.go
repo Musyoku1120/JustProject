@@ -33,7 +33,9 @@ var (
 	msgQueLock sync.Mutex               // 消息队列字典锁
 )
 
+var Global *ConfigGlobal
 var defaultLogger *Log
+var defaultMsgHandler *MsgHandler
 
 func ServerEnd() bool {
 	return globalStop == 1
@@ -68,9 +70,12 @@ func WaitForExit() {
 	}
 }
 
-func init() {
-	defaultLogger = NewLog(10240, &ConsoleLogger{}, &FileLogger{Path: "D:/ServerLog/server.log"})
+func Init() {
+	defaultLogger = NewLog(10240, &ConsoleLogger{}, &FileLogger{Path: Global.LogPath})
 	defaultLogger.SetLevel(LogLevelError)
+
+	defaultMsgHandler = NewMsgHandler()
+	defaultMsgHandler.AddHandlers(CSHandlerMap)
 
 	Gogo(func() {
 		TimeStamp = time.Now().UnixNano() / 1e9

@@ -7,6 +7,13 @@ enum ProtocolId {
 	Common = 2; // req: CommonC2S, res: CommonS2C
 }
 
+message ServerInfo {
+	int32 Id = 1;
+	string Name = 2;
+	string Address = 3;
+	repeated int32 MsgHandlers = 4;
+}
+
 message LoginC2S {
 	int32 RoleId = 1;
 }

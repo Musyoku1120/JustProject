@@ -82,3 +82,7 @@ func (r *Message) Bytes() []byte {
 	fullMsg = append(fullMsg, r.Body...)
 	return fullMsg
 }
+
+func NewMessage(data []byte) *Message {
+
+}

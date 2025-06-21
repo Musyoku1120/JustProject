@@ -1,5 +1,9 @@
 # JustProject
 
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+
 字节序：binary.LittleEndian or BigEndian
 	big：大端序，数据的低位字节放在内存的高位，符合阅读习惯
 		例如int16(5): 0000 0000 0000 0101
