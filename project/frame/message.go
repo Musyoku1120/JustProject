@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"google.golang.org/protobuf/proto"
+	"server/protocol/generate/pb"
 )
 
 const (
@@ -13,9 +15,9 @@ const (
 )
 
 type MessageHead struct {
-	ProtoId  uint32 // 协议id
-	PlayerId uint32 // 玩家id
-	Length   uint32 // 消息体长度（不含头）
+	ProtoId  pb.ProtocolId // 协议id
+	PlayerId uint32        // 玩家id
+	Length   uint32        // 消息体长度（不含头）
 }
 
 func (r *MessageHead) Encode() ([]byte, error) {
@@ -83,6 +85,31 @@ func (r *Message) Bytes() []byte {
 	return fullMsg
 }
 
-func NewMessage(data []byte) *Message {
+func NewMsg(head *MessageHead, body []byte) *Message {
+	return &Message{
+		Head: head,
+		Body: body,
+	}
+}
 
+func NewRpcMsg(msg proto.Message) *Message {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return nil
+	}
+	return NewMsg(&MessageHead{
+		ProtoId: pb.ProtocolId_Hello,
+		Length:  uint32(len(data)),
+	}, data)
+}
+
+func NewCSMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return nil
+	}
+	return NewMsg(&MessageHead{
+		ProtoId: protoId,
+		Length:  uint32(len(data)),
+	}, data)
 }

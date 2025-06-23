@@ -23,7 +23,7 @@ type CSHandler struct {
 	HandlerCommon func(req *pb.CommonC2S) error
 }
 
-func (h *CSHandler) OnHandlerLogin(body []byte) bool {
+func (h *CSHandler) OnHandlerLogin(mq frame.IMsgQue, body []byte) bool {
 	req := &pb.LoginC2S{}
 	if err := proto.Unmarshal(body, req); err != nil {
 		frame.LogError("Failed to unmarshal protoId: 1, err: %v", err)
@@ -37,7 +37,7 @@ func (h *CSHandler) OnHandlerLogin(body []byte) bool {
 	return true
 }
 
-func (h *CSHandler) OnHandlerCommon(body []byte) bool {
+func (h *CSHandler) OnHandlerCommon(mq frame.IMsgQue, body []byte) bool {
 	req := &pb.CommonC2S{}
 	if err := proto.Unmarshal(body, req); err != nil {
 		frame.LogError("Failed to unmarshal protoId: 2, err: %v", err)

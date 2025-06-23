@@ -28,9 +28,9 @@ var (
 )
 
 var (
-	msgQueUId  uint32                   // 消息队列唯一id
-	msgQueMap  = map[uint32]IMsgQueue{} // 消息队列字典
-	msgQueLock sync.Mutex               // 消息队列字典锁
+	msgQueUId  uint32                 // 消息队列唯一id
+	msgQueMap  = map[uint32]IMsgQue{} // 消息队列字典
+	msgQueLock sync.Mutex             // 消息队列字典锁
 )
 
 var Global *ConfigGlobal
@@ -75,6 +75,7 @@ func Init() {
 	defaultLogger.SetLevel(LogLevelError)
 
 	defaultMsgHandler = NewMsgHandler()
+	defaultMsgHandler.AddHandler(0, HandlerServerHello)
 	defaultMsgHandler.AddHandlers(CSHandlerMap)
 
 	Gogo(func() {

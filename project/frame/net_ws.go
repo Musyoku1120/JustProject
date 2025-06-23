@@ -29,7 +29,7 @@ func (r *wsMsgQue) read() {
 			LogError("read message err:%v", err)
 			break
 		}
-		if !r.processMsg(&Message{Body: data}) {
+		if !r.processMsg(r, &Message{Body: data}) {
 			break
 		}
 		r.lastTick = TimeStamp

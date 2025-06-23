@@ -57,13 +57,13 @@ func (r *msgQue) Stop() {
 	}
 }
 
-func (r *msgQue) processMsg(msg *Message) (rp bool) {
+func (r *msgQue) processMsg(mq IMsgQue, msg *Message) (rp bool) {
 	rp = true
 	// 同步模式 收到消息即处理
 	TryIt(func() {
 		fun := r.MsgHandler.GetHandler(int32(msg.Head.ProtoId))
 		if fun != nil {
-			rp = fun(msg.Body)
+			rp = fun(mq, msg.Body)
 		} else {
 			rp = false
 		}
@@ -71,7 +71,7 @@ func (r *msgQue) processMsg(msg *Message) (rp bool) {
 	return rp
 }
 
-type IMsgQueue interface {
+type IMsgQue interface {
 	Send(msg *Message) (rep bool)
 	read()
 	write()

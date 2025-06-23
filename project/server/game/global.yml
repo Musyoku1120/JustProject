@@ -1,5 +1,5 @@
-UniqueId: 1001
-ServerName: auth
+UniqueId: 3001
+ServerName: game
 LogPath: D:/ServerLog/server.log
 Servers:
   GateAddress: 127.0.0.1:2120

@@ -140,7 +140,7 @@ func init()  {
 
 	for _, fn := range protocols {
 		builder.WriteString(fmt.Sprintf(`
-func (h *CSHandler) On%v(body []byte) bool {
+func (h *CSHandler) On%v(mq frame.IMsgQue, body []byte) bool {
 	req := &pb.%v{}
 	if err := proto.Unmarshal(body, req); err != nil {
 		frame.LogError("Failed to unmarshal protoId: %v, err: %%v", err)

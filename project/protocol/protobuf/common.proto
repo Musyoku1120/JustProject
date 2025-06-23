@@ -2,7 +2,7 @@ syntax = "proto3";
 option go_package = "./pb";
 
 enum ProtocolId {
-	Null = 0;
+	Hello = 0;
 	Login = 1; // req: LoginC2S, res: LoginS2C
 	Common = 2; // req: CommonC2S, res: CommonS2C
 }

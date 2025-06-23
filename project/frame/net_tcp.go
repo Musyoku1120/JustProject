@@ -55,7 +55,7 @@ func (r *tcpMsqQue) read() {
 			LogError("read head body err:%v", err)
 			break
 		}
-		if !r.processMsg(&Message{Head: head, Body: body}) {
+		if !r.processMsg(r, &Message{Head: head, Body: body}) {
 			break
 		}
 		head, body = nil, nil

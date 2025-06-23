@@ -24,7 +24,7 @@ const (
 type ProtocolId int32
 
 const (
-	ProtocolId_Null   ProtocolId = 0
+	ProtocolId_Hello  ProtocolId = 0
 	ProtocolId_Login  ProtocolId = 1 // req: LoginC2S, res: LoginS2C
 	ProtocolId_Common ProtocolId = 2 // req: CommonC2S, res: CommonS2C
 )
@@ -32,12 +32,12 @@ const (
 // Enum value maps for ProtocolId.
 var (
 	ProtocolId_name = map[int32]string{
-		0: "Null",
+		0: "Hello",
 		1: "Login",
 		2: "Common",
 	}
 	ProtocolId_value = map[string]int32{
-		"Null":   0,
+		"Hello":  0,
 		"Login":  1,
 		"Common": 2,
 	}
@@ -332,10 +332,10 @@ const file_common_proto_rawDesc = "" +
 	"\tCommonC2S\x12\x16\n" +
 	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\"!\n" +
 	"\tCommonS2C\x12\x14\n" +
-	"\x05Error\x18\x01 \x01(\x05R\x05Error*-\n" +
+	"\x05Error\x18\x01 \x01(\x05R\x05Error*.\n" +
 	"\n" +
-	"ProtocolId\x12\b\n" +
-	"\x04Null\x10\x00\x12\t\n" +
+	"ProtocolId\x12\t\n" +
+	"\x05Hello\x10\x00\x12\t\n" +
 	"\x05Login\x10\x01\x12\n" +
 	"\n" +
 	"\x06Common\x10\x02B\x06Z\x04./pbb\x06proto3"
