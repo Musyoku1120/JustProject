@@ -1,6 +1,6 @@
 UniqueId: 3001
-ServerName: game
 LogPath: D:/ServerLog/server.log
+ServerName: game
+Address: 127.0.0.1:3120
 Servers:
-  GateAddress: 127.0.0.1:2120
-  GameAddress: 127.0.0.1:3120
+  []

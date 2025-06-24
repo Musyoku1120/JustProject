@@ -1,6 +1,6 @@
 UniqueId: 2001
-ServerName: gate
 LogPath: D:/ServerLog/server.log
+ServerName: gate
+Address: 127.0.0.1:2120
 Servers:
-  GateAddress: 127.0.0.1:2120
-  GameAddress: 127.0.0.1:3120
+  ["127.0.0.1:3120"]

@@ -30,7 +30,7 @@ func main() {
 	configPath := filepath.Join(wd, "/server/auth/global.yml")
 
 	frame.InitConfig(configPath)
-	frame.Init()
+	frame.InitBase()
 
 	frame.LogInfo("start auth")
 	CacheAccount = make(map[string]int32)

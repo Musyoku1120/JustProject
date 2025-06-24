@@ -35,7 +35,7 @@ var (
 
 var Global *ConfigGlobal
 var defaultLogger *Log
-var defaultMsgHandler *MsgHandler
+var DefaultMsgHandler *MsgHandler
 
 func ServerEnd() bool {
 	return globalStop == 1
@@ -70,13 +70,16 @@ func WaitForExit() {
 	}
 }
 
-func Init() {
+func InitBase() {
 	defaultLogger = NewLog(10240, &ConsoleLogger{}, &FileLogger{Path: Global.LogPath})
 	defaultLogger.SetLevel(LogLevelError)
 
-	defaultMsgHandler = NewMsgHandler()
-	defaultMsgHandler.AddHandler(0, HandlerServerHello)
-	defaultMsgHandler.AddHandlers(CSHandlerMap)
+	DefaultMsgHandler = NewMsgHandler()
+	DefaultMsgHandler.AddHandler(0, HandlerServerHello)
+
+	if err := TcpListen(Global.Address, DefaultMsgHandler); err != nil {
+		LogError("InitBase TcpListen Failed Err: %v", err)
+	}
 
 	Gogo(func() {
 		TimeStamp = time.Now().UnixNano() / 1e9

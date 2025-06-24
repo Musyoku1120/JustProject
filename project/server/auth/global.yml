@@ -1,6 +1,6 @@
 UniqueId: 1001
-ServerName: auth
 LogPath: D:/ServerLog/server.log
+ServerName: auth
+Address: 127.0.0.1:1120
 Servers:
-  GateAddress: 127.0.0.1:2120
-  GameAddress: 127.0.0.1:3120
+  []

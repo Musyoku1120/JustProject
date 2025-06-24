@@ -3,17 +3,22 @@ package frame
 import (
 	"google.golang.org/protobuf/proto"
 	"server/protocol/generate/pb"
+	"sync"
 	"time"
 )
 
+const rpcTimeoutSecond = 30
+
 var (
-	rpcId2MQ = make(map[int32]IMsgQue)
-	//rpcId2Info = make(map[int32]*pb.ServerInfo)
-	rpcPid2Ids = make(map[int32][]int32)
+	allLock      = sync.Mutex{}
+	rpcAddr2Mid  = make(map[string]uint32)            // 连接字典
+	rpcPid2Sid   = make(map[int32]map[int32]struct{}) // 处理路由
+	rpcAddr2Info = make(map[string]*pb.ServerInfo)    // 服务信息
 )
 
 func InitRPC() {
-	ticker := time.NewTicker(time.Second * 5)
+	connectServers()
+	ticker := time.NewTicker(time.Second * 3)
 	systemGo(func(stopCh chan struct{}) {
 		for {
 			select {
@@ -24,17 +29,14 @@ func InitRPC() {
 			}
 		}
 	})
-	connectServers()
 }
 
 func connectServers() {
-	servers := []string{
-		Global.Servers.GateAddress,
-		Global.Servers.GameAddress,
-	}
-
-	for _, server := range servers {
-		if server == "" {
+	for _, server := range Global.Servers {
+		allLock.Lock()
+		mid, ok := rpcAddr2Mid[server]
+		allLock.Unlock()
+		if ok && MsgQueAvailable(mid) {
 			continue
 		}
 		connectServer(server)
@@ -42,27 +44,21 @@ func connectServers() {
 }
 
 func connectServer(addr string) {
-	mq := newTcpConnect("tcp", addr, defaultMsgHandler)
+	mq := newTcpConnect("tcp", addr, DefaultMsgHandler)
 	mq.Reconnect(0) // 立即连接
-	onRpcConnect(mq)
 }
 
-func onRpcConnect(mq *tcpMsqQue) {
+func SendServerHello(mq IMsgQue) {
 	serverHello := &pb.ServerInfo{
-		Id:   Global.UniqueId,
-		Name: Global.ServerName,
-	}
-	switch Global.ServerName {
-	case "gate":
-		serverHello.Address = Global.Servers.GateAddress
-	case "game":
-		serverHello.Address = Global.Servers.GameAddress
+		Id:      Global.UniqueId,
+		Name:    Global.ServerName,
+		Address: Global.Address,
 	}
 
-	for id := range defaultMsgHandler.id2Handler {
+	for id := range DefaultMsgHandler.id2Handler {
 		serverHello.MsgHandlers = append(serverHello.MsgHandlers, id)
 	}
-	mq.Send(NewRpcMsg(serverHello))
+	mq.Send(NewPbMsg(pb.ProtocolId_ServerHello, serverHello))
 }
 
 func HandlerServerHello(mq IMsgQue, body []byte) bool {
@@ -70,11 +66,17 @@ func HandlerServerHello(mq IMsgQue, body []byte) bool {
 	if err := proto.Unmarshal(body, serverHello); err != nil {
 		return false
 	}
+	serverHello.LastHeartbeat = TimeStamp
 
-	rpcId2MQ[serverHello.Id] = mq
-	//rpcId2Info[serverHello.Id] = serverHello
+	allLock.Lock()
+	rpcAddr2Mid[serverHello.Address] = mq.GetUid()
+	rpcAddr2Info[serverHello.Address] = serverHello
 	for _, pid := range serverHello.MsgHandlers {
-		rpcPid2Ids[pid] = append(rpcPid2Ids[pid], serverHello.Id)
+		if _, ok := rpcPid2Sid[pid]; !ok {
+			rpcPid2Sid[pid] = make(map[int32]struct{})
+		}
+		rpcPid2Sid[pid][serverHello.Id] = struct{}{}
 	}
+	allLock.Unlock()
 	return true
 }

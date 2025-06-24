@@ -85,30 +85,16 @@ func (r *Message) Bytes() []byte {
 	return fullMsg
 }
 
-func NewMsg(head *MessageHead, body []byte) *Message {
-	return &Message{
-		Head: head,
-		Body: body,
-	}
+func NewBytesMsg(head *MessageHead, body []byte) *Message {
+	return &Message{Head: head, Body: body}
 }
 
-func NewRpcMsg(msg proto.Message) *Message {
+func NewPbMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return nil
 	}
-	return NewMsg(&MessageHead{
-		ProtoId: pb.ProtocolId_Hello,
-		Length:  uint32(len(data)),
-	}, data)
-}
-
-func NewCSMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return nil
-	}
-	return NewMsg(&MessageHead{
+	return NewBytesMsg(&MessageHead{
 		ProtoId: protoId,
 		Length:  uint32(len(data)),
 	}, data)

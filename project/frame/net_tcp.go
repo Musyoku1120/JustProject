@@ -39,7 +39,7 @@ func (r *tcpMsqQue) read() {
 				if err != io.EOF {
 					LogError("receive data err:%v", err)
 				}
-				LogError("read head err:%v\n", err)
+				LogError("read head err:%v", err)
 				break
 			}
 			if head = NewMessageHead(headData); head == nil {
@@ -132,6 +132,9 @@ func (r *tcpMsqQue) connect() {
 	}
 	atomic.CompareAndSwapInt32(&r.connecting, 1, 0)
 
+	_ = r.conn.SetKeepAlive(true)
+	_ = r.conn.SetKeepAlivePeriod(30 * time.Second)
+
 	Gogo(func() {
 		LogInfo("from connect dial tcp[%v] read start", r.uid)
 		r.read()
@@ -220,6 +223,7 @@ func TcpListen(address string, handler *MsgHandler) error {
 				continue
 			}
 			mq := newTcpAccept(conn, handler)
+			SendServerHello(mq) // 接受连接时发起 Hello 握手
 			Gogo(func() {
 				LogInfo("from listen accept tcp[%v] read start", mq.uid)
 				mq.read()

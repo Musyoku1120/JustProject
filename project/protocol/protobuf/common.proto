@@ -2,9 +2,9 @@ syntax = "proto3";
 option go_package = "./pb";
 
 enum ProtocolId {
-	Hello = 0;
-	Login = 1; // req: LoginC2S, res: LoginS2C
-	Common = 2; // req: CommonC2S, res: CommonS2C
+	ServerHello = 0;
+	Login = 101; // req: LoginC2S, res: LoginS2C
+	Common = 102; // req: CommonC2S, res: CommonS2C
 }
 
 message ServerInfo {
@@ -12,6 +12,11 @@ message ServerInfo {
 	string Name = 2;
 	string Address = 3;
 	repeated int32 MsgHandlers = 4;
+	int64 LastHeartbeat = 5;
+}
+
+message ServerHeartbeat {
+	int32 Id = 1;
 }
 
 message LoginC2S {

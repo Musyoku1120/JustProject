@@ -1,6 +1,6 @@
 package frame
 
-type HandlerFunc func(body []byte) bool
+type HandlerFunc func(mq IMsgQue, body []byte) bool
 
 type MsgHandler struct {
 	id2Handler map[int32]HandlerFunc

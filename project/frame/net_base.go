@@ -71,8 +71,20 @@ func (r *msgQue) processMsg(mq IMsgQue, msg *Message) (rp bool) {
 	return rp
 }
 
+func (r *msgQue) GetUid() uint32 {
+	return r.uid
+}
+
 type IMsgQue interface {
 	Send(msg *Message) (rep bool)
 	read()
 	write()
+	GetUid() uint32
+}
+
+func MsgQueAvailable(uid uint32) bool {
+	msgQueLock.Lock()
+	defer msgQueLock.Unlock()
+	_, ok := msgQueMap[uid]
+	return ok
 }

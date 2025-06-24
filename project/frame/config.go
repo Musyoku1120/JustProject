@@ -5,16 +5,12 @@ import (
 	"os"
 )
 
-type configServer struct {
-	GateAddress string `yaml:"GateAddress"`
-	GameAddress string `yaml:"GameAddress"`
-}
-
 type ConfigGlobal struct {
-	UniqueId   int32         `yaml:"UniqueId"`
-	ServerName string        `yaml:"ServerName"`
-	LogPath    string        `yaml:"LogPath"`
-	Servers    *configServer `yaml:"Servers"`
+	UniqueId   int32    `yaml:"UniqueId"`
+	LogPath    string   `yaml:"LogPath"`
+	ServerName string   `yaml:"ServerName"`
+	Address    string   `yaml:"Address"`
+	Servers    []string `yaml:"Servers"`
 }
 
 func ReadFile(path string) ([]byte, error) {
