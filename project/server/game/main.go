@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"server/frame"
 	"server/protocol/generate/pb"
-	server "server/server/tool"
+	"server/server/tool"
 )
 
 func main() {

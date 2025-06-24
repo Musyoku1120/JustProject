@@ -89,7 +89,7 @@ func NewBytesMsg(head *MessageHead, body []byte) *Message {
 	return &Message{Head: head, Body: body}
 }
 
-func NewPbMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
+func NewProtoMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return nil

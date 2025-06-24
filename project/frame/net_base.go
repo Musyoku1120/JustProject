@@ -88,3 +88,13 @@ func MsgQueAvailable(uid uint32) bool {
 	_, ok := msgQueMap[uid]
 	return ok
 }
+
+func GetMsgQue(uid uint32) IMsgQue {
+	msgQueLock.Lock()
+	defer msgQueLock.Unlock()
+	mq, ok := msgQueMap[uid]
+	if ok {
+		return mq
+	}
+	return nil
+}
