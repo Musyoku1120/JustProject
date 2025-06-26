@@ -12,7 +12,7 @@ message ServerInfo {
 	string Name = 2;
 	string Address = 3;
 	repeated int32 MsgHandlers = 4;
-	int64 LastHeartbeat = 5;
+	uint32 LocalConnUid = 5;
 }
 
 message ServerHeartbeat {
@@ -24,6 +24,7 @@ message LoginC2S {
 }
 message LoginS2C {
 	int32 Error = 1;
+	string Data = 2;
 }
 
 message CommonC2S {

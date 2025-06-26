@@ -147,7 +147,7 @@ func (r *tcpMsqQue) connect() {
 	})
 }
 
-func (r *tcpMsqQue) Reconnect(offset int) {
+func (r *tcpMsqQue) Reconnect(offset int32) {
 	if r.conn != nil {
 		return
 	}
@@ -165,13 +165,13 @@ func (r *tcpMsqQue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newTcpConnect(netType string, address string, handler *MsgHandler) *tcpMsqQue {
+func newTcpConnect(netType string, address string, handler IMsgHandler) *tcpMsqQue {
 	mq := &tcpMsqQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
-			MsgHandler:   handler,
+			handler:      handler,
 		},
 		conn:    nil,
 		netType: netType,
@@ -184,13 +184,13 @@ func newTcpConnect(netType string, address string, handler *MsgHandler) *tcpMsqQ
 }
 
 // 构造接受连接对象 tcp.Accept
-func newTcpAccept(conn *net.TCPConn, handler *MsgHandler) *tcpMsqQue {
+func newTcpAccept(conn *net.TCPConn, handler IMsgHandler) *tcpMsqQue {
 	mq := &tcpMsqQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
-			MsgHandler:   handler,
+			handler:      handler,
 		},
 		conn: conn,
 	}
@@ -200,7 +200,7 @@ func newTcpAccept(conn *net.TCPConn, handler *MsgHandler) *tcpMsqQue {
 	return mq
 }
 
-func TcpListen(address string, handler *MsgHandler) error {
+func TcpListen(address string, handler IMsgHandler) error {
 	tcpAddr, rErr := net.ResolveTCPAddr("tcp", address)
 	if rErr != nil {
 		LogError("tcp addr resolve err:%v", rErr)
@@ -223,7 +223,8 @@ func TcpListen(address string, handler *MsgHandler) error {
 				continue
 			}
 			mq := newTcpAccept(conn, handler)
-			SendServerHello(mq) // 接受连接时发起 Hello 握手
+			//SendServerHello(mq) // 接受连接时发起 Hello 握手
+			mq.handler.OnConnComplete(mq)
 			Gogo(func() {
 				LogInfo("from listen accept tcp[%v] read start", mq.uid)
 				mq.read()

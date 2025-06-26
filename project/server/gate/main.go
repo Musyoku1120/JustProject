@@ -1,11 +1,11 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
 	"server/frame"
-	"server/protocol/generate/pb"
-	"time"
+	"server/server/gate/serve"
 )
 
 func main() {
@@ -16,28 +16,9 @@ func main() {
 	frame.InitBase()
 	frame.InitRPC()
 
-	TestMsg()
+	http.HandleFunc("/proxy", func(writer http.ResponseWriter, request *http.Request) {
+		serve.StartProxy(writer, request)
+	})
 
 	frame.WaitForExit()
-}
-
-func TestMsg() {
-
-	time.Sleep(3 * time.Second)
-
-	mq101 := frame.GetProtoServiceMq(101)
-	mq102 := frame.GetProtoServiceMq(102)
-
-	ticker := time.NewTicker(time.Second * 3)
-	for {
-		select {
-		case <-ticker.C:
-			mq101.Send(frame.NewProtoMsg(pb.ProtocolId_Login, &pb.LoginC2S{
-				RoleId: 123,
-			}))
-			mq102.Send(frame.NewProtoMsg(pb.ProtocolId_Common, &pb.CommonC2S{
-				RoleId: 456,
-			}))
-		}
-	}
 }

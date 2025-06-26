@@ -3,6 +3,7 @@ package frame
 import (
 	"os"
 	"os/signal"
+	"server/protocol/generate/pb"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -30,7 +31,7 @@ var (
 var (
 	msgQueUId  uint32                 // 消息队列唯一id
 	msgQueMap  = map[uint32]IMsgQue{} // 消息队列字典
-	msgQueLock sync.Mutex             // 消息队列字典锁
+	msgQueLock sync.RWMutex           // 消息队列字典锁
 )
 
 var Global *ConfigGlobal
@@ -75,11 +76,7 @@ func InitBase() {
 	defaultLogger.SetLevel(LogLevelError)
 
 	DefaultMsgHandler = NewMsgHandler()
-	DefaultMsgHandler.AddHandler(0, HandlerServerHello)
-
-	if err := TcpListen(Global.Address, DefaultMsgHandler); err != nil {
-		LogError("InitBase TcpListen Failed Err: %v", err)
-	}
+	DefaultMsgHandler.RegisterHandler(int32(pb.ProtocolId_ServerHello), HandlerServerHello)
 
 	Gogo(func() {
 		TimeStamp = time.Now().UnixNano() / 1e9

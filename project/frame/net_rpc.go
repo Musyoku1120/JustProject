@@ -8,13 +8,16 @@ import (
 )
 
 var (
-	allLock      = sync.Mutex{}
+	allLock      = sync.RWMutex{}
 	rpcAddr2Mid  = make(map[string]uint32)             // 连接字典
-	rpcPid2Addr  = make(map[int32]map[string]struct{}) // 处理路由
 	rpcAddr2Info = make(map[string]*pb.ServerInfo)     // 服务信息
+	rpcPid2Addr  = make(map[int32]map[string]struct{}) // 处理路由
 )
 
-func GetProtoServiceMq(pid int32) IMsgQue {
+func GetProtoService(pid int32) IMsgQue {
+	allLock.RLock()
+	defer allLock.RUnlock()
+
 	set, ok := rpcPid2Addr[pid]
 	if !ok {
 		return nil
@@ -28,6 +31,11 @@ func GetProtoServiceMq(pid int32) IMsgQue {
 }
 
 func InitRPC() {
+	if err := TcpListen(Global.Address, DefaultMsgHandler); err != nil {
+		LogError("InitRPC TcpListen Failed Err: %v", err)
+		return
+	}
+
 	connectServers()
 	ticker := time.NewTicker(time.Second * 3)
 	systemGo(func(stopCh chan struct{}) {
@@ -43,20 +51,16 @@ func InitRPC() {
 }
 
 func connectServers() {
-	for _, server := range Global.Servers {
-		allLock.Lock()
-		mid, ok := rpcAddr2Mid[server]
-		allLock.Unlock()
+	for _, address := range Global.Servers {
+		allLock.RLock()
+		mid, ok := rpcAddr2Mid[address]
+		allLock.RUnlock()
+
 		if ok && MsgQueAvailable(mid) {
 			continue
 		}
-		connectServer(server)
+		LaunchConnect("tcp", address, DefaultMsgHandler, 0)
 	}
-}
-
-func connectServer(addr string) {
-	mq := newTcpConnect("tcp", addr, DefaultMsgHandler)
-	mq.Reconnect(0) // 立即连接
 }
 
 func SendServerHello(mq IMsgQue) {
@@ -77,9 +81,10 @@ func HandlerServerHello(mq IMsgQue, body []byte) bool {
 	if err := proto.Unmarshal(body, serverHello); err != nil {
 		return false
 	}
-	serverHello.LastHeartbeat = TimeStamp
 
 	allLock.Lock()
+	defer allLock.Unlock()
+
 	rpcAddr2Mid[serverHello.Address] = mq.GetUid()
 	rpcAddr2Info[serverHello.Address] = serverHello
 	for _, pid := range serverHello.MsgHandlers {
@@ -88,6 +93,5 @@ func HandlerServerHello(mq IMsgQue, body []byte) bool {
 		}
 		rpcPid2Addr[pid][serverHello.Address] = struct{}{}
 	}
-	allLock.Unlock()
 	return true
 }

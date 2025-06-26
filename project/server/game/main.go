@@ -21,7 +21,7 @@ func main() {
 }
 
 func InitHandler() {
-	frame.DefaultMsgHandler.AddHandlers(server.CSHandlerMap) // CSHandlerObj Need Register
+	frame.DefaultMsgHandler.RegisterHandlers(server.CSHandlerMap) // CSHandlerObj Need Register
 	server.CSHandlerObj.HandlerLogin = func(req *pb.LoginC2S) error {
 		frame.LogInfo("handler login")
 		return nil

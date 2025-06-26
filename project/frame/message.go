@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	MsgTimeoutSec  = 200         // 消息超时秒
+	MsgTimeoutSec  = 360         // 消息超时秒
 	MsgHeadSize    = 12          // 消息头长度
 	MsgBodySizeMax = 1024 * 1024 // 消息体上限
 )
 
 type MessageHead struct {
-	ProtoId  pb.ProtocolId // 协议id
+	ProtoId  pb.ProtocolId // 协议id int32
 	PlayerId uint32        // 玩家id
 	Length   uint32        // 消息体长度（不含头）
 }
@@ -85,8 +85,14 @@ func (r *Message) Bytes() []byte {
 	return fullMsg
 }
 
-func NewBytesMsg(head *MessageHead, body []byte) *Message {
-	return &Message{Head: head, Body: body}
+func NewBytesMsg(protoId pb.ProtocolId, body []byte) *Message {
+	return &Message{
+		Head: &MessageHead{
+			ProtoId: protoId,
+			Length:  uint32(len(body)),
+		},
+		Body: body,
+	}
 }
 
 func NewProtoMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
@@ -94,8 +100,5 @@ func NewProtoMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
 	if err != nil {
 		return nil
 	}
-	return NewBytesMsg(&MessageHead{
-		ProtoId: protoId,
-		Length:  uint32(len(data)),
-	}, data)
+	return NewBytesMsg(protoId, data)
 }

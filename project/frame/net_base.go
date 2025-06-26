@@ -1,6 +1,7 @@
 package frame
 
 import (
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -10,7 +11,7 @@ type msgQue struct {
 	stopFlag     int32 // CAS_Int32
 	writeChannel chan *Message
 	lastTick     int64
-	*MsgHandler
+	handler      IMsgHandler
 }
 
 func (r *msgQue) Send(msg *Message) (rp bool) {
@@ -61,7 +62,7 @@ func (r *msgQue) processMsg(mq IMsgQue, msg *Message) (rp bool) {
 	rp = true
 	// 同步模式 收到消息即处理
 	TryIt(func() {
-		fun := r.MsgHandler.GetHandler(int32(msg.Head.ProtoId))
+		fun := r.handler.GetHandlerFunc(int32(msg.Head.ProtoId))
 		if fun != nil {
 			rp = fun(mq, msg.Body)
 		} else {
@@ -83,18 +84,25 @@ type IMsgQue interface {
 }
 
 func MsgQueAvailable(uid uint32) bool {
-	msgQueLock.Lock()
-	defer msgQueLock.Unlock()
+	msgQueLock.RLock()
+	defer msgQueLock.RUnlock()
 	_, ok := msgQueMap[uid]
 	return ok
 }
 
 func GetMsgQue(uid uint32) IMsgQue {
-	msgQueLock.Lock()
-	defer msgQueLock.Unlock()
+	msgQueLock.RLock()
+	defer msgQueLock.RUnlock()
 	mq, ok := msgQueMap[uid]
 	if ok {
 		return mq
 	}
 	return nil
+}
+
+func LaunchConnect(netType string, address string, handler IMsgHandler, delay int32) {
+	if strings.Contains(netType, "tcp") {
+		mq := newTcpConnect("tcp", address, handler)
+		mq.Reconnect(delay) // 立即连接
+	}
 }

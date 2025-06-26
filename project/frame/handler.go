@@ -12,19 +12,11 @@ func NewMsgHandler() *MsgHandler {
 	}
 }
 
-func (r *MsgHandler) GetHandler(id int32) HandlerFunc {
-	fun, ok := r.id2Handler[id]
-	if !ok {
-		return nil
-	}
-	return fun
-}
-
-func (r *MsgHandler) AddHandler(id int32, fun HandlerFunc) {
+func (r *MsgHandler) RegisterHandler(id int32, fun HandlerFunc) {
 	r.id2Handler[id] = fun
 }
 
-func (r *MsgHandler) AddHandlers(handlerMap map[int32]HandlerFunc) {
+func (r *MsgHandler) RegisterHandlers(handlerMap map[int32]HandlerFunc) {
 	for id, fun := range handlerMap {
 		r.id2Handler[id] = fun
 	}
@@ -42,7 +34,16 @@ func (r *MsgHandler) OnSolveMsg(mq IMsgQue, body []byte) bool {
 }
 
 func (r *MsgHandler) OnConnComplete(mq IMsgQue) bool {
+	SendServerHello(mq)
 	return true
+}
+
+func (r *MsgHandler) GetHandlerFunc(pid int32) HandlerFunc {
+	fun, ok := r.id2Handler[pid]
+	if !ok {
+		return nil
+	}
+	return fun
 }
 
 type IMsgHandler interface {
@@ -50,4 +51,5 @@ type IMsgHandler interface {
 	OnDelMsgQue(mq IMsgQue)
 	OnSolveMsg(mq IMsgQue, body []byte) bool
 	OnConnComplete(mq IMsgQue) bool
+	GetHandlerFunc(pid int32) HandlerFunc
 }

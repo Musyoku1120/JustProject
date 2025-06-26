@@ -2,7 +2,6 @@ package frame
 
 import (
 	"github.com/gorilla/websocket"
-	"net/http"
 	"sync/atomic"
 	"time"
 )
@@ -116,13 +115,13 @@ func (r *wsMsgQue) Reconnect(offset int) {
 }
 
 // 构造主动连接对象
-func newWsConnect(address string, handler *MsgHandler) *wsMsgQue {
+func newWsConnect(address string, handler IMsgHandler) *wsMsgQue {
 	mq := &wsMsgQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
-			MsgHandler:   handler,
+			handler:      handler,
 		},
 		conn:    nil,
 		address: address,
@@ -133,14 +132,14 @@ func newWsConnect(address string, handler *MsgHandler) *wsMsgQue {
 	return mq
 }
 
-// 构造接受连接对象 来自http的upgrade
-func newWsAccept(conn *websocket.Conn, handler *MsgHandler) *wsMsgQue {
+// 构造接受连接对象
+func newWsAccept(conn *websocket.Conn, handler IMsgHandler) *wsMsgQue {
 	mq := &wsMsgQue{
 		msgQue: msgQue{
 			uid:          atomic.AddUint32(&msgQueUId, 1),
 			writeChannel: make(chan *Message, 64),
 			lastTick:     TimeStamp,
-			MsgHandler:   handler,
+			handler:      handler,
 		},
 		conn: conn,
 	}
@@ -148,32 +147,4 @@ func newWsAccept(conn *websocket.Conn, handler *MsgHandler) *wsMsgQue {
 	msgQueMap[mq.uid] = mq
 	msgQueLock.Unlock()
 	return mq
-}
-
-func WsListen(requestUrl string, handler *MsgHandler) {
-	wsUpgrader := websocket.Upgrader{
-		ReadBufferSize:  4096,
-		WriteBufferSize: 4096,
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-	http.HandleFunc(requestUrl, func(writer http.ResponseWriter, request *http.Request) {
-		conn, err := wsUpgrader.Upgrade(writer, request, nil)
-		if err != nil {
-			LogError("upgrade err:%v", err)
-			return
-		}
-		mq := newWsAccept(conn, handler)
-		Gogo(func() {
-			LogInfo("from listen accept ws[%v] read start", mq.uid)
-			mq.read()
-			LogInfo("from listen accept ws[%v] read end", mq.uid)
-		})
-		Gogo(func() {
-			LogInfo("from listen accept ws[%v] write start", mq.uid)
-			mq.write()
-			LogInfo("from listen accept ws[%v] write end", mq.uid)
-		})
-	})
 }
