@@ -62,7 +62,7 @@ func (r *msgQue) processMsg(mq IMsgQue, msg *Message) (rp bool) {
 	rp = true
 	// 同步模式 收到消息即处理
 	TryIt(func() {
-		fun := r.handler.GetHandlerFunc(int32(msg.Head.ProtoId))
+		fun := r.handler.GetHandlerFunc(msg.Head.ProtoId)
 		if fun != nil {
 			rp = fun(mq, msg.Body)
 		} else {

@@ -159,7 +159,7 @@ func (r *tcpMsqQue) Reconnect(offset int32) {
 		if offset > 0 {
 			time.Sleep(time.Millisecond * time.Duration(offset))
 		}
-		r.stopFlag = 0
+		r.stopFlag = 0 // 关闭 停止标识
 		r.connect()
 	})
 }
@@ -223,8 +223,9 @@ func TcpListen(address string, handler IMsgHandler) error {
 				continue
 			}
 			mq := newTcpAccept(conn, handler)
-			//SendServerHello(mq) // 接受连接时发起 Hello 握手
+
 			mq.handler.OnConnComplete(mq)
+
 			Gogo(func() {
 				LogInfo("from listen accept tcp[%v] read start", mq.uid)
 				mq.read()

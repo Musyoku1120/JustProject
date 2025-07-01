@@ -76,7 +76,7 @@ type ServerInfo struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
 	Address       string                 `protobuf:"bytes,3,opt,name=Address,proto3" json:"Address,omitempty"`
 	MsgHandlers   []int32                `protobuf:"varint,4,rep,packed,name=MsgHandlers,proto3" json:"MsgHandlers,omitempty"`
-	LastHeartbeat int64                  `protobuf:"varint,5,opt,name=LastHeartbeat,proto3" json:"LastHeartbeat,omitempty"`
+	LocalConnUid  uint32                 `protobuf:"varint,5,opt,name=LocalConnUid,proto3" json:"LocalConnUid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -139,9 +139,9 @@ func (x *ServerInfo) GetMsgHandlers() []int32 {
 	return nil
 }
 
-func (x *ServerInfo) GetLastHeartbeat() int64 {
+func (x *ServerInfo) GetLocalConnUid() uint32 {
 	if x != nil {
-		return x.LastHeartbeat
+		return x.LocalConnUid
 	}
 	return 0
 }
@@ -237,6 +237,7 @@ func (x *LoginC2S) GetRoleId() int32 {
 type LoginS2C struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Error         int32                  `protobuf:"varint,1,opt,name=Error,proto3" json:"Error,omitempty"`
+	Data          string                 `protobuf:"bytes,2,opt,name=Data,proto3" json:"Data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -276,6 +277,13 @@ func (x *LoginS2C) GetError() int32 {
 		return x.Error
 	}
 	return 0
+}
+
+func (x *LoginS2C) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
 }
 
 type CommonC2S struct {
@@ -370,20 +378,21 @@ var File_common_proto protoreflect.FileDescriptor
 
 const file_common_proto_rawDesc = "" +
 	"\n" +
-	"\fcommon.proto\"\x92\x01\n" +
+	"\fcommon.proto\"\x90\x01\n" +
 	"\n" +
 	"ServerInfo\x12\x0e\n" +
 	"\x02Id\x18\x01 \x01(\x05R\x02Id\x12\x12\n" +
 	"\x04Name\x18\x02 \x01(\tR\x04Name\x12\x18\n" +
 	"\aAddress\x18\x03 \x01(\tR\aAddress\x12 \n" +
-	"\vMsgHandlers\x18\x04 \x03(\x05R\vMsgHandlers\x12$\n" +
-	"\rLastHeartbeat\x18\x05 \x01(\x03R\rLastHeartbeat\"!\n" +
+	"\vMsgHandlers\x18\x04 \x03(\x05R\vMsgHandlers\x12\"\n" +
+	"\fLocalConnUid\x18\x05 \x01(\rR\fLocalConnUid\"!\n" +
 	"\x0fServerHeartbeat\x12\x0e\n" +
 	"\x02Id\x18\x01 \x01(\x05R\x02Id\"\"\n" +
 	"\bLoginC2S\x12\x16\n" +
-	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\" \n" +
+	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\"4\n" +
 	"\bLoginS2C\x12\x14\n" +
-	"\x05Error\x18\x01 \x01(\x05R\x05Error\"#\n" +
+	"\x05Error\x18\x01 \x01(\x05R\x05Error\x12\x12\n" +
+	"\x04Data\x18\x02 \x01(\tR\x04Data\"#\n" +
 	"\tCommonC2S\x12\x16\n" +
 	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\"!\n" +
 	"\tCommonS2C\x12\x14\n" +

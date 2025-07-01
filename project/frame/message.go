@@ -15,9 +15,9 @@ const (
 )
 
 type MessageHead struct {
-	ProtoId  pb.ProtocolId // 协议id int32
-	PlayerId uint32        // 玩家id
-	Length   uint32        // 消息体长度（不含头）
+	ProtoId pb.ProtocolId // 协议id int32
+	RoleId  uint32        // 玩家id
+	Length  uint32        // 消息体长度（不含头）
 }
 
 func (r *MessageHead) Encode() ([]byte, error) {
@@ -25,7 +25,7 @@ func (r *MessageHead) Encode() ([]byte, error) {
 	if err := binary.Write(buf, binary.LittleEndian, r.ProtoId); err != nil {
 		return nil, err
 	}
-	if err := binary.Write(buf, binary.LittleEndian, r.PlayerId); err != nil {
+	if err := binary.Write(buf, binary.LittleEndian, r.RoleId); err != nil {
 		return nil, err
 	}
 	if err := binary.Write(buf, binary.LittleEndian, r.Length); err != nil {
@@ -42,7 +42,7 @@ func (r *MessageHead) Decode(data []byte) error {
 	if err := binary.Read(buf, binary.LittleEndian, &r.ProtoId); err != nil {
 		return err
 	}
-	if err := binary.Read(buf, binary.LittleEndian, &r.PlayerId); err != nil {
+	if err := binary.Read(buf, binary.LittleEndian, &r.RoleId); err != nil {
 		return err
 	}
 	if err := binary.Read(buf, binary.LittleEndian, &r.Length); err != nil {
@@ -85,20 +85,21 @@ func (r *Message) Bytes() []byte {
 	return fullMsg
 }
 
-func NewBytesMsg(protoId pb.ProtocolId, body []byte) *Message {
+func NewBytesMsg(protoId pb.ProtocolId, roleId uint32, body []byte) *Message {
 	return &Message{
 		Head: &MessageHead{
 			ProtoId: protoId,
+			RoleId:  roleId,
 			Length:  uint32(len(body)),
 		},
 		Body: body,
 	}
 }
 
-func NewProtoMsg(protoId pb.ProtocolId, msg proto.Message) *Message {
+func NewProtoMsg(protoId pb.ProtocolId, roleId uint32, msg proto.Message) *Message {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return nil
 	}
-	return NewBytesMsg(protoId, data)
+	return NewBytesMsg(protoId, roleId, data)
 }

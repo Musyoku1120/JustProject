@@ -37,7 +37,7 @@ func InitRPC() {
 	}
 
 	connectServers()
-	ticker := time.NewTicker(time.Second * 3)
+	ticker := time.NewTicker(time.Second * 1)
 	systemGo(func(stopCh chan struct{}) {
 		for {
 			select {
@@ -73,7 +73,7 @@ func SendServerHello(mq IMsgQue) {
 	for id := range DefaultMsgHandler.id2Handler {
 		serverHello.MsgHandlers = append(serverHello.MsgHandlers, id)
 	}
-	mq.Send(NewProtoMsg(pb.ProtocolId_ServerHello, serverHello))
+	mq.Send(NewProtoMsg(pb.ProtocolId_ServerHello, 0, serverHello))
 }
 
 func HandlerServerHello(mq IMsgQue, body []byte) bool {

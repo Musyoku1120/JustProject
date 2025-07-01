@@ -1,13 +1,12 @@
-package serve
+package frame
 
 import (
-	"server/frame"
 	"sync"
 )
 
 type GameProxy struct {
 	roleId  int32
-	mq      frame.IMsgQue
+	mq      IMsgQue
 	msgLock sync.Mutex
-	msgList []*frame.Message
+	msgList []*Message
 }

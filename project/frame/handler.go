@@ -1,5 +1,7 @@
 package frame
 
+import "server/protocol/generate/pb"
+
 type HandlerFunc func(mq IMsgQue, body []byte) bool
 
 type MsgHandler struct {
@@ -38,8 +40,8 @@ func (r *MsgHandler) OnConnComplete(mq IMsgQue) bool {
 	return true
 }
 
-func (r *MsgHandler) GetHandlerFunc(pid int32) HandlerFunc {
-	fun, ok := r.id2Handler[pid]
+func (r *MsgHandler) GetHandlerFunc(pid pb.ProtocolId) HandlerFunc {
+	fun, ok := r.id2Handler[int32(pid)]
 	if !ok {
 		return nil
 	}
@@ -51,5 +53,5 @@ type IMsgHandler interface {
 	OnDelMsgQue(mq IMsgQue)
 	OnSolveMsg(mq IMsgQue, body []byte) bool
 	OnConnComplete(mq IMsgQue) bool
-	GetHandlerFunc(pid int32) HandlerFunc
+	GetHandlerFunc(pid pb.ProtocolId) HandlerFunc
 }
