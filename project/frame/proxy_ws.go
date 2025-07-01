@@ -8,14 +8,14 @@ import (
 	"sync/atomic"
 )
 
-type gateProxy struct {
+type proxyWs struct {
 	clientConn *websocket.Conn
 	cRead      chan []byte
 	cWrite     chan []byte
 	id         uint32
 }
 
-func (r *gateProxy) ReadMsg() {
+func (r *proxyWs) ReadMsg() {
 	Gogo(func() {
 		defer func() {
 		}()
@@ -28,22 +28,22 @@ func (r *gateProxy) ReadMsg() {
 				}
 				head := &MessageHead{}
 				if err := head.Decode(data[:MsgHeadSize]); err != nil {
-					LogError("gateProxy read head err:%v", err)
+					LogError("proxyWs read head err:%v", err)
 					return
 				}
 				// 转发到逻辑服
-				rpc := GetProtoService(int32(pb.ProtocolId_Login))
+				rpc := GetProtoService(int32(head.ProtoId))
 				if rpc == nil {
-					LogError("get proto service fail")
+					LogError("get proto[%v] service fail", head.ProtoId)
 					continue
 				}
-				rpc.Send(NewBytesMsg(head.ProtoId, data[MsgHeadSize:]))
+				rpc.Send(NewBytesMsg(head.ProtoId, head.RoleId, data[MsgHeadSize:]))
 			}
 		}
 	})
 }
 
-func (r *gateProxy) WriteMsg() {
+func (r *proxyWs) WriteMsg() {
 	Gogo(func() {
 		defer func() {
 			if r.clientConn != nil {
@@ -60,7 +60,7 @@ func (r *gateProxy) WriteMsg() {
 				// 回复给玩家客户端
 				err := r.clientConn.WriteMessage(websocket.BinaryMessage, data)
 				if err != nil {
-					LogError("gateProxy write err:%v", err)
+					LogError("proxyWs write err:%v", err)
 					return
 				}
 			}
@@ -86,21 +86,21 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 
 	Gogo(func() {
 		// 构造代理对象
-		proxy := &gateProxy{
+		proxy := &proxyWs{
 			clientConn: conn,
 			cRead:      make(chan []byte, 64),
 			cWrite:     make(chan []byte, 64),
 			id:         atomic.AddUint32(&proxyId, 1),
 		}
 
-		// 首条消息需要为登录
+		// 首条消息类型指定
 		_, firstData, readErr := proxy.clientConn.ReadMessage()
 		if readErr != nil {
 			LogError("StartProxy read first message err:%v", readErr)
 			return
 		}
 		loginC2S := &pb.LoginC2S{}
-		if decodeErr := proto.Unmarshal(firstData, loginC2S); decodeErr != nil {
+		if decodeErr := proto.Unmarshal(firstData[MsgHeadSize:], loginC2S); decodeErr != nil {
 			LogError("StartProxy unmarshal first message err:%v", decodeErr)
 			return
 		}
@@ -111,7 +111,7 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			LogError("get proto service fail")
 			return
 		}
-		rpc.Send(NewProtoMsg(pb.ProtocolId_Login, loginC2S))
+		rpc.Send(NewProtoMsg(pb.ProtocolId_Login, uint32(loginC2S.RoleId), loginC2S))
 
 		// 收发消息
 		proxy.ReadMsg()

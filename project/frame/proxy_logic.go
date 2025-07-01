@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-type GameProxy struct {
+type proxyLogic struct {
 	roleId  int32
 	mq      IMsgQue
 	msgLock sync.Mutex
