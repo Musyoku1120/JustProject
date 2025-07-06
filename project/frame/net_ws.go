@@ -47,7 +47,7 @@ func (r *wsMsgQue) write() {
 	}()
 
 	var msg *Message
-	tick := time.NewTimer(time.Second * time.Duration(MsgTimeoutSec))
+	tick := time.NewTimer(time.Second * time.Duration(ConnectTimeoutSec))
 	for !r.IsStop() || msg != nil {
 		if msg == nil {
 			select {

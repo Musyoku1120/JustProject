@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+var (
+	ConnectTimeoutSec = 300 // 消息超时秒
+)
+
 type msgQue struct {
 	uid          uint32
 	stopFlag     int32 // CAS_Int32
@@ -36,8 +40,8 @@ func (r *msgQue) Send(msg *Message) (rp bool) {
 func (r *msgQue) isTimeout(tick *time.Timer) bool {
 	return false
 	//past := int(TimeStamp - r.lastTick)
-	//if past < MsgTimeoutSec {
-	//	tick.Reset(time.Second * time.Duration(MsgTimeoutSec-past))
+	//if past < ConnectTimeoutSec {
+	//	tick.Reset(time.Second * time.Duration(ConnectTimeoutSec-past))
 	//	return false
 	//}
 	//return true

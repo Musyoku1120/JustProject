@@ -62,6 +62,7 @@ func (r *ProxyWs) ReadMsg() {
 				rpc := GetProtoService(int32(head.ProtoId))
 				if rpc == nil {
 					LogError("get proto[%v] service fail", head.ProtoId)
+					rpc.Send(NewReplyMsg(r.roleId, &pb.ErrorHint{Hint: "service not found"}))
 					continue
 				}
 				rpc.Send(NewBytesMsg(head.ProtoId, head.RoleId, data[MsgHeadSize:]))
@@ -87,6 +88,7 @@ func (r *ProxyWs) WriteMsg() {
 					return
 				}
 				// 回复给玩家客户端
+				LogDebug("ProxyWs write data len:%v", len(data))
 				err := r.clientConn.WriteMessage(websocket.BinaryMessage, data)
 				if err != nil {
 					LogError("ProxyWs write err:%v", err)
@@ -99,8 +101,8 @@ func (r *ProxyWs) WriteMsg() {
 
 func (r *ProxyWs) Close() {
 	_ = r.clientConn.Close()
-	close(r.cRead)
-	close(r.cWrite)
+	r.ReadMsg()
+	r.WriteMsg()
 	wsLock.Lock()
 	delete(wsMap, r.roleId)
 	defer wsLock.Unlock()
@@ -138,19 +140,27 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	Gogo(func() {
-		// 首条消息类型指定
-		_, firstData, readErr := conn.ReadMessage()
-		if readErr != nil {
-			LogError("StartProxy read first message err:%v", readErr)
-			return
-		}
-		if len(firstData) < MsgHeadSize {
-			LogError("StartProxy first message length err")
-			return
-		}
 		loginC2S := &pb.LoginC2S{}
-		if decodeErr := proto.Unmarshal(firstData[MsgHeadSize:], loginC2S); decodeErr != nil {
-			LogError("StartProxy unmarshal first message err:%v", decodeErr)
+
+		firstTry := func() bool {
+			// 首条消息类型指定
+			_, firstData, readErr := conn.ReadMessage()
+			if readErr != nil {
+				LogError("StartProxy read first message err:%v", readErr)
+				return false
+			}
+			if len(firstData) < MsgHeadSize {
+				LogError("StartProxy first message length err")
+				return false
+			}
+			if decodeErr := proto.Unmarshal(firstData[MsgHeadSize:], loginC2S); decodeErr != nil {
+				LogError("StartProxy unmarshal first message err:%v", decodeErr)
+				return false
+			}
+			return true
+		}
+		if !firstTry() {
+			_ = conn.Close()
 			return
 		}
 
@@ -166,12 +176,6 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 		rpc.Send(NewProtoMsg(pb.ProtocolId_Login, loginC2S.RoleId, loginC2S))
 
 		// 收发消息
-		proxy.ReadMsg()
-		proxy.WriteMsg()
-		defer func() {
-			close(proxy.cRead)
-			close(proxy.cWrite)
-		}()
 		for {
 			select {
 			case <-stopChForGo:
@@ -179,7 +183,7 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			default:
 				_, data, err := proxy.clientConn.ReadMessage()
 				if err != nil {
-					LogError("StartProxy read normal message err:%v", err)
+					LogError("ws proxy read normal message err:%v", err)
 					return
 				}
 				proxy.cRead <- data

@@ -37,10 +37,10 @@ func (r *MsgHandler) OnSolveMsg(mq IMsgQue, msg *Message) bool {
 	}
 
 	switch Global.ServerType {
-	case ServerTypeAuth:
+	case ServerTypeGate:
 		gamer := GetWs(msg.Head.RoleId)
 		if gamer == nil {
-			LogError("auth websocket not found, roleId=%d", msg.Head.RoleId)
+			LogError("gate websocket not found, roleId=%d", msg.Head.RoleId)
 			return false
 		}
 		gamer.Solve(msg)
@@ -50,19 +50,21 @@ func (r *MsgHandler) OnSolveMsg(mq IMsgQue, msg *Message) bool {
 		fun := r.GetHandlerFunc(msg.Head.ProtoId)
 		if fun == nil {
 			LogError("handler not found, protoId=%d", msg.Head.ProtoId)
+			mq.Send(NewReplyMsg(msg.Head.RoleId, &pb.ErrorHint{Hint: "handler not found"}))
 			return false
 		}
 		if msg.Head.ProtoId == pb.ProtocolId_Login {
-			if GetProxy(msg.Head.RoleId) != nil {
-				mq.Send(nil) // kick gamer
-				DelProxy(msg.Head.RoleId)
+			if old := GetLogic(msg.Head.RoleId); old != nil {
+				old.msgQue.Send(NewReplyMsg(old.roleId, &pb.ErrorHint{Hint: "server kick out"}))
+				DelLogic(msg.Head.RoleId)
 			}
 		}
-		gamer := GenProxy(msg.Head.RoleId)
-		gamer.Solve(msg, mq, fun)
+		gamer := GenLogic(msg.Head.RoleId, mq)
+		gamer.Solve(msg, fun)
 		return true
 
 	default:
+		LogPanic("server type not configured")
 		return false
 	}
 }

@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	MsgTimeoutSec  = 300         // 消息超时秒
 	MsgHeadSize    = 12          // 消息头长度
 	MsgBodySizeMax = 1024 * 1024 // 消息体上限
 )

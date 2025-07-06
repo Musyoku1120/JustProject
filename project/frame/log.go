@@ -16,7 +16,7 @@ func GetNextHourIntervalS() int {
 }
 
 func GenLogFileName() string {
-	dateStr := time.Now().Format("2006-01-02 15:04")
+	dateStr := time.Now().Format(time.DateTime)
 	r := strings.NewReplacer(":", "", "-", "", " ", "")
 	return r.Replace(dateStr)
 }
@@ -110,7 +110,7 @@ func (r *Log) write(levelStr string, level LogLevel, params ...interface{}) {
 		if r.formatFunc != nil {
 			r.writeChannel <- r.formatFunc(level, string(([]byte(file))[i:]), line, params)
 		} else {
-			logStr := fmt.Sprintf("[%v][%v][%v:%v]:", levelStr, time.Now().Format("2006-01-02 15:04:05"), string(([]byte(file))[i:]), line)
+			logStr := fmt.Sprintf("[%v][%v][%v:%v]:", levelStr, time.Now().Format(time.DateTime), string(([]byte(file))[i:]), line)
 			r.writeChannel <- logStr + fmt.Sprintf(params[0].(string), params[1:]...)
 		}
 	}

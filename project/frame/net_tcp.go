@@ -33,29 +33,30 @@ func (r *tcpMsqQue) read() {
 
 	for !r.IsStop() {
 		// 消息头
-		if head == nil {
-			_, err := io.ReadFull(r.conn, headData)
-			if err != nil {
-				if err != io.EOF {
-					LogError("receive data err:%v", err)
-				}
-				LogError("read head err:%v", err)
-				break
+		_, err := io.ReadFull(r.conn, headData)
+		if err != nil {
+			if err != io.EOF {
+				LogError("receive data err:%v", err)
 			}
-			if head = NewMessageHead(headData); head == nil {
-				LogError("read head nil:%v", head)
-				break
-			}
-			body = make([]byte, head.Length)
-			continue
+			LogError("read head err:%v", err)
+			break
 		}
+		if head = NewMessageHead(headData); head == nil {
+			LogError("read head nil:%v", head)
+			break
+		}
+		LogDebug("receive head:%v", head)
+
 		// 消息体
-		_, err := io.ReadFull(r.conn, body)
+		body = make([]byte, head.Length)
+		_, err = io.ReadFull(r.conn, body)
 		if err != nil {
 			LogError("read head body err:%v", err)
 			break
 		}
+		LogDebug("receive body:%v", body)
 		if !r.processMsg(r, &Message{Head: head, Body: body}) {
+			LogWarn("server[%v] process[%v] failed", Global.UniqueId, head.ProtoId)
 			break
 		}
 		head, body = nil, nil
@@ -79,7 +80,7 @@ func (r *tcpMsqQue) write() {
 	var msg *Message
 	var body []byte
 	var writePos = 0
-	tick := time.NewTimer(time.Second * time.Duration(MsgTimeoutSec))
+	tick := time.NewTimer(time.Second * time.Duration(ConnectTimeoutSec))
 	for !r.IsStop() || msg != nil {
 		if msg == nil {
 			select {

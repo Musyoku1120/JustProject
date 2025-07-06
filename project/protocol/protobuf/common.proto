@@ -5,7 +5,8 @@ enum ProtocolId {
 	ServerHello = 0;
 	Server2Client = 1;
 	Login = 101; // req: LoginC2S, res: LoginS2C
-	Common = 102; // req: CommonC2S, res: CommonS2C
+	Logout = 102; // req: LogoutC2S, res: LogoutS2C
+	Common = 103; // req: CommonC2S, res: CommonS2C
 }
 
 message ServerInfo {
@@ -13,11 +14,6 @@ message ServerInfo {
 	string Type = 2;
 	string Address = 3;
 	repeated int32 MsgHandlers = 4;
-	uint32 LocalConnUid = 5;
-}
-
-message ServerHeartbeat {
-	int32 Id = 1;
 }
 
 message LoginC2S {
@@ -28,9 +24,20 @@ message LoginS2C {
 	string Data = 2;
 }
 
+message LogoutC2S {
+	int32 RoleId = 1;
+}
+message LogoutS2C {
+	int32 Error = 1;
+}
+
 message CommonC2S {
 	int32 RoleId = 1;
 }
 message CommonS2C {
 	int32 Error = 1;
+}
+
+message ErrorHint {
+	string Hint = 1;
 }
