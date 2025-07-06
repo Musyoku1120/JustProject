@@ -243,7 +243,7 @@ func (r *Log) Warn(params ...interface{}) {
 
 func (r *Log) Error(params ...interface{}) {
 	if r.logLevel >= LogLevelError {
-		r.write("D", r.logLevel, params...)
+		r.write("E", r.logLevel, params...)
 	}
 }
 
