@@ -5,7 +5,17 @@ import (
 	"os"
 )
 
-var validServerTypes = map[string]struct{}{"auth": {}, "gate": {}, "game": {}}
+var (
+	ServerTypeAuth = "auth"
+	ServerTypeGate = "gate"
+	ServerTypeGame = "game"
+
+	validServerTypes = map[string]struct{}{
+		ServerTypeAuth: {},
+		ServerTypeGate: {},
+		ServerTypeGame: {},
+	}
+)
 
 type ConfigGlobal struct {
 	UniqueId   int32    `yaml:"UniqueId"`

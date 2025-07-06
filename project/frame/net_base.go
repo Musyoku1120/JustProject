@@ -34,12 +34,13 @@ func (r *msgQue) Send(msg *Message) (rp bool) {
 }
 
 func (r *msgQue) isTimeout(tick *time.Timer) bool {
-	past := int(TimeStamp - r.lastTick)
-	if past < MsgTimeoutSec {
-		tick.Reset(time.Second * time.Duration(MsgTimeoutSec-past))
-		return false
-	}
-	return true
+	return false
+	//past := int(TimeStamp - r.lastTick)
+	//if past < MsgTimeoutSec {
+	//	tick.Reset(time.Second * time.Duration(MsgTimeoutSec-past))
+	//	return false
+	//}
+	//return true
 }
 
 func (r *msgQue) IsStop() bool {

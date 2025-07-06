@@ -37,7 +37,7 @@ func (r *MsgHandler) OnSolveMsg(mq IMsgQue, msg *Message) bool {
 	}
 
 	switch Global.ServerType {
-	case "auth":
+	case ServerTypeAuth:
 		gamer := GetWs(msg.Head.RoleId)
 		if gamer == nil {
 			LogError("auth websocket not found, roleId=%d", msg.Head.RoleId)
@@ -46,7 +46,7 @@ func (r *MsgHandler) OnSolveMsg(mq IMsgQue, msg *Message) bool {
 		gamer.Solve(msg)
 		return true
 
-	case "game":
+	case ServerTypeGame:
 		fun := r.GetHandlerFunc(msg.Head.ProtoId)
 		if fun == nil {
 			LogError("handler not found, protoId=%d", msg.Head.ProtoId)
@@ -61,8 +61,10 @@ func (r *MsgHandler) OnSolveMsg(mq IMsgQue, msg *Message) bool {
 		gamer := GenProxy(msg.Head.RoleId)
 		gamer.Solve(msg, mq, fun)
 		return true
+
+	default:
+		return false
 	}
-	return false
 }
 
 func (r *MsgHandler) OnConnComplete(mq IMsgQue) bool {
