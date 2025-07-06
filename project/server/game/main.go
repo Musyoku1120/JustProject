@@ -22,12 +22,19 @@ func main() {
 
 func InitHandler() {
 	frame.DefaultMsgHandler.RegisterHandlers(server.CSHandlerMap) // CSHandlerObj Need Register
-	server.CSHandlerObj.HandlerLogin = func(req *pb.LoginC2S) error {
+	server.CSHandlerObj.HandlerLogin = func(mq frame.IMsgQue, req *pb.LoginC2S) error {
 		frame.LogInfo("handler login")
+		mq.Send(frame.NewReplyMsg(req.RoleId, &pb.LoginS2C{
+			Error: 0,
+			Data:  "hello",
+		}))
 		return nil
 	}
-	server.CSHandlerObj.HandlerCommon = func(req *pb.CommonC2S) error {
+	server.CSHandlerObj.HandlerCommon = func(mq frame.IMsgQue, req *pb.CommonC2S) error {
 		frame.LogInfo("handler common")
+		mq.Send(frame.NewReplyMsg(req.RoleId, &pb.CommonS2C{
+			Error: 0,
+		}))
 		return nil
 	}
 }

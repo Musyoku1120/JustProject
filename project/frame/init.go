@@ -52,21 +52,20 @@ func WaitForExit() {
 	case <-stopChForSignal:
 		close(stopChForSignal)
 
-		// 关闭网络交互
+		// 1.关闭网络交互 tcp|ws|udp 2.关闭逻辑业务 goroutine pool
 		if !atomic.CompareAndSwapInt32(&globalStop, 0, 1) {
 			return
 		}
-
-		// 关闭逻辑业务
 		close(stopChForGo)
 		waitAllGo.Wait()
 
-		// 关闭系统服务
+		// 3.关闭日志
 		if !atomic.CompareAndSwapInt32(&loggerStop, 0, 1) {
 			return
 		}
 		close(stopChForSys)
 		waitAllSys.Wait()
+
 		os.Exit(0)
 	}
 }

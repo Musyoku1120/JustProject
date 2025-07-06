@@ -19,8 +19,8 @@ func init()  {
 	}
 }
 type CSHandler struct {
-	HandlerLogin func(req *pb.LoginC2S) error
-	HandlerCommon func(req *pb.CommonC2S) error
+	HandlerLogin func(mq frame.IMsgQue, req *pb.LoginC2S) error
+	HandlerCommon func(mq frame.IMsgQue, req *pb.CommonC2S) error
 }
 
 func (h *CSHandler) OnHandlerLogin(mq frame.IMsgQue, body []byte) bool {
@@ -30,7 +30,7 @@ func (h *CSHandler) OnHandlerLogin(mq frame.IMsgQue, body []byte) bool {
 		return false
 	}
 	frame.LogDebug("Received protoId: 101, req: %v", req.String())
-	if err := h.HandlerLogin(req); err != nil {
+	if err := h.HandlerLogin(mq, req); err != nil {
 		frame.LogError("Failed to handle protoId: 101, err: %v", err)
 		return false
 	}
@@ -44,7 +44,7 @@ func (h *CSHandler) OnHandlerCommon(mq frame.IMsgQue, body []byte) bool {
 		return false
 	}
 	frame.LogDebug("Received protoId: 102, req: %v", req.String())
-	if err := h.HandlerCommon(req); err != nil {
+	if err := h.HandlerCommon(mq, req); err != nil {
 		frame.LogError("Failed to handle protoId: 102, err: %v", err)
 		return false
 	}

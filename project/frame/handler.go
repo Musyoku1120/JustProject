@@ -31,8 +31,38 @@ func (r *MsgHandler) OnNewMsgQue(mq IMsgQue) bool {
 func (r *MsgHandler) OnDelMsgQue(mq IMsgQue) {
 }
 
-func (r *MsgHandler) OnSolveMsg(mq IMsgQue, body []byte) bool {
-	return true
+func (r *MsgHandler) OnSolveMsg(mq IMsgQue, msg *Message) bool {
+	if msg.Head.ProtoId == pb.ProtocolId_ServerHello {
+		return HandlerServerHello(mq, msg.Body)
+	}
+
+	switch Global.ServerType {
+	case "auth":
+		gamer := GetWs(msg.Head.RoleId)
+		if gamer == nil {
+			LogError("auth websocket not found, roleId=%d", msg.Head.RoleId)
+			return false
+		}
+		gamer.Solve(msg)
+		return true
+
+	case "game":
+		fun := r.GetHandlerFunc(msg.Head.ProtoId)
+		if fun == nil {
+			LogError("handler not found, protoId=%d", msg.Head.ProtoId)
+			return false
+		}
+		if msg.Head.ProtoId == pb.ProtocolId_Login {
+			if GetProxy(msg.Head.RoleId) != nil {
+				mq.Send(nil) // kick gamer
+				DelProxy(msg.Head.RoleId)
+			}
+		}
+		gamer := GenProxy(msg.Head.RoleId)
+		gamer.Solve(msg, mq, fun)
+		return true
+	}
+	return false
 }
 
 func (r *MsgHandler) OnConnComplete(mq IMsgQue) bool {
@@ -51,7 +81,7 @@ func (r *MsgHandler) GetHandlerFunc(pid pb.ProtocolId) HandlerFunc {
 type IMsgHandler interface {
 	OnNewMsgQue(mq IMsgQue) bool
 	OnDelMsgQue(mq IMsgQue)
-	OnSolveMsg(mq IMsgQue, body []byte) bool
+	OnSolveMsg(mq IMsgQue, msg *Message) bool
 	OnConnComplete(mq IMsgQue) bool
 	GetHandlerFunc(pid pb.ProtocolId) HandlerFunc
 }

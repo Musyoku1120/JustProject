@@ -38,10 +38,10 @@ func InitRPC() {
 
 	connectServers()
 	ticker := time.NewTicker(time.Second * 1)
-	systemGo(func(stopCh chan struct{}) {
+	Gogo(func() {
 		for {
 			select {
-			case <-stopCh:
+			case <-stopChForGo:
 				return
 			case <-ticker.C:
 				connectServers()
@@ -66,7 +66,7 @@ func connectServers() {
 func SendServerHello(mq IMsgQue) {
 	serverHello := &pb.ServerInfo{
 		Id:      Global.UniqueId,
-		Name:    Global.ServerName,
+		Type:    Global.ServerType,
 		Address: Global.Address,
 	}
 

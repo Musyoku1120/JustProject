@@ -5,32 +5,59 @@ import (
 	"google.golang.org/protobuf/proto"
 	"net/http"
 	"server/protocol/generate/pb"
-	"sync/atomic"
+	"sync"
 )
 
-type proxyWs struct {
+var (
+	wsMap  map[int32]*ProxyWs
+	wsLock sync.RWMutex
+
+	wsUpgrader = websocket.Upgrader{
+		ReadBufferSize:  4096,
+		WriteBufferSize: 4096,
+		CheckOrigin:     func(r *http.Request) bool { return true },
+	}
+)
+
+type ProxyWs struct {
+	roleId int32
+
 	clientConn *websocket.Conn
-	cRead      chan []byte
-	cWrite     chan []byte
-	id         uint32
+	cRead      chan []byte // c2s
+	cWrite     chan []byte // s2c
 }
 
-func (r *proxyWs) ReadMsg() {
+func (r *ProxyWs) Solve(msg *Message) {
+	r.cWrite <- msg.Bytes()
+}
+
+func (r *ProxyWs) ReadMsg() {
 	Gogo(func() {
 		defer func() {
 		}()
 
 		for {
 			select {
+			case <-stopChForGo:
+				return
 			case data := <-r.cRead:
 				if data == nil {
 					return
 				}
-				head := &MessageHead{}
-				if err := head.Decode(data[:MsgHeadSize]); err != nil {
-					LogError("proxyWs read head err:%v", err)
+				if len(data) < MsgHeadSize {
+					LogError("ProxyWs read data length err")
 					return
 				}
+				head := &MessageHead{}
+				if err := head.Decode(data[:MsgHeadSize]); err != nil {
+					LogError("ProxyWs read head err:%v", err)
+					return
+				}
+				if len(data) != int(MsgHeadSize+head.Length) {
+					LogError("ProxyWs read data length err")
+					return
+				}
+
 				// 转发到逻辑服
 				rpc := GetProtoService(int32(head.ProtoId))
 				if rpc == nil {
@@ -43,7 +70,7 @@ func (r *proxyWs) ReadMsg() {
 	})
 }
 
-func (r *proxyWs) WriteMsg() {
+func (r *ProxyWs) WriteMsg() {
 	Gogo(func() {
 		defer func() {
 			if r.clientConn != nil {
@@ -53,6 +80,8 @@ func (r *proxyWs) WriteMsg() {
 
 		for {
 			select {
+			case <-stopChForGo:
+				return
 			case data := <-r.cWrite:
 				if data == nil {
 					return
@@ -60,7 +89,7 @@ func (r *proxyWs) WriteMsg() {
 				// 回复给玩家客户端
 				err := r.clientConn.WriteMessage(websocket.BinaryMessage, data)
 				if err != nil {
-					LogError("proxyWs write err:%v", err)
+					LogError("ProxyWs write err:%v", err)
 					return
 				}
 			}
@@ -68,14 +97,38 @@ func (r *proxyWs) WriteMsg() {
 	})
 }
 
-var (
-	proxyId    uint32 = 0
-	wsUpgrader        = websocket.Upgrader{
-		ReadBufferSize:  4096,
-		WriteBufferSize: 4096,
-		CheckOrigin:     func(r *http.Request) bool { return true },
+func (r *ProxyWs) Close() {
+	_ = r.clientConn.Close()
+	close(r.cRead)
+	close(r.cWrite)
+	wsLock.Lock()
+	delete(wsMap, r.roleId)
+	defer wsLock.Unlock()
+}
+
+func GetWs(roleId int32) *ProxyWs {
+	wsLock.RLock()
+	defer wsLock.RUnlock()
+	if wsMap == nil {
+		wsMap = make(map[int32]*ProxyWs)
 	}
-)
+	return wsMap[roleId]
+}
+
+func GenWs(conn *websocket.Conn, roleId int32) *ProxyWs {
+	wsLock.Lock()
+	defer wsLock.Unlock()
+	if wsMap == nil {
+		wsMap = make(map[int32]*ProxyWs)
+	}
+	wsMap[roleId] = &ProxyWs{
+		roleId:     roleId,
+		clientConn: conn,
+		cRead:      make(chan []byte, 64),
+		cWrite:     make(chan []byte, 64),
+	}
+	return wsMap[roleId]
+}
 
 func StartProxy(writer http.ResponseWriter, request *http.Request) {
 	conn, upgradeErr := wsUpgrader.Upgrade(writer, request, nil)
@@ -85,18 +138,14 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	Gogo(func() {
-		// 构造代理对象
-		proxy := &proxyWs{
-			clientConn: conn,
-			cRead:      make(chan []byte, 64),
-			cWrite:     make(chan []byte, 64),
-			id:         atomic.AddUint32(&proxyId, 1),
-		}
-
 		// 首条消息类型指定
-		_, firstData, readErr := proxy.clientConn.ReadMessage()
+		_, firstData, readErr := conn.ReadMessage()
 		if readErr != nil {
 			LogError("StartProxy read first message err:%v", readErr)
+			return
+		}
+		if len(firstData) < MsgHeadSize {
+			LogError("StartProxy first message length err")
 			return
 		}
 		loginC2S := &pb.LoginC2S{}
@@ -105,13 +154,16 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
+		proxy := GenWs(conn, loginC2S.RoleId)
+		defer proxy.Close()
+
 		// 转发消息到逻辑服
 		rpc := GetProtoService(int32(pb.ProtocolId_Login))
 		if rpc == nil {
 			LogError("get proto service fail")
 			return
 		}
-		rpc.Send(NewProtoMsg(pb.ProtocolId_Login, uint32(loginC2S.RoleId), loginC2S))
+		rpc.Send(NewProtoMsg(pb.ProtocolId_Login, loginC2S.RoleId, loginC2S))
 
 		// 收发消息
 		proxy.ReadMsg()
@@ -121,12 +173,17 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			close(proxy.cWrite)
 		}()
 		for {
-			_, data, err := proxy.clientConn.ReadMessage()
-			if err != nil {
-				LogError("StartProxy read normal message err:%v", err)
+			select {
+			case <-stopChForGo:
 				return
+			default:
+				_, data, err := proxy.clientConn.ReadMessage()
+				if err != nil {
+					LogError("StartProxy read normal message err:%v", err)
+					return
+				}
+				proxy.cRead <- data
 			}
-			proxy.cRead <- data
 		}
 	})
 }

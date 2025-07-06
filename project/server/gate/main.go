@@ -17,10 +17,19 @@ func main() {
 	frame.InitBase()
 	frame.InitRPC()
 
-	_ = http.ListenAndServe("127.0.0.1:5000", nil)
 	http.HandleFunc("/proxy", func(writer http.ResponseWriter, request *http.Request) {
 		frame.StartProxy(writer, request)
 	})
+	go func() {
+		ws := &http.Server{Addr: ":1000"}
+		defer func() {
+			_ = ws.Close()
+		}()
+		if err := ws.ListenAndServe(); err != nil {
+			frame.LogError("Start Listen And Serve err:%v", err)
+			return
+		}
+	}()
 
 	Prt()
 	frame.WaitForExit()

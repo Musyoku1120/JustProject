@@ -132,7 +132,7 @@ func init()  {
 	builder.WriteString("type CSHandler struct {")
 	builder.WriteString("\n")
 	for _, fn := range protocols {
-		builder.WriteString(fmt.Sprintf("\t%s func(req *pb.%v) error", fn.Name, fn.Req))
+		builder.WriteString(fmt.Sprintf("\t%s func(mq frame.IMsgQue, req *pb.%v) error", fn.Name, fn.Req))
 		builder.WriteString("\n")
 	}
 	builder.WriteString("}")
@@ -147,7 +147,7 @@ func (h *CSHandler) On%v(mq frame.IMsgQue, body []byte) bool {
 		return false
 	}
 	frame.LogDebug("Received protoId: %v, req: %%v", req.String())
-	if err := h.%v(req); err != nil {
+	if err := h.%v(mq, req); err != nil {
 		frame.LogError("Failed to handle protoId: %v, err: %%v", err)
 		return false
 	}

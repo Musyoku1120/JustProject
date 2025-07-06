@@ -49,7 +49,7 @@ func TryIt(fun func(), catch func(interface{})) {
 	fun()
 }
 
-func systemGo(fn func(stopCh chan struct{})) {
+func goForLogger(fn func(stopCh chan struct{})) {
 	waitAllSys.Add(1)
 	go func() {
 		fn(stopChForSys)

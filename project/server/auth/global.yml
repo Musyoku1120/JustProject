@@ -1,6 +1,5 @@
 UniqueId: 1001
 LogPath: D:/ServerLog/server.log
-ServerName: auth
+ServerType: auth
 Address: 127.0.0.1:1120
-Servers:
-  []
+Servers: []

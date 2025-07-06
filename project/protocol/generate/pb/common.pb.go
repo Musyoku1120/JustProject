@@ -24,22 +24,25 @@ const (
 type ProtocolId int32
 
 const (
-	ProtocolId_ServerHello ProtocolId = 0
-	ProtocolId_Login       ProtocolId = 101 // req: LoginC2S, res: LoginS2C
-	ProtocolId_Common      ProtocolId = 102 // req: CommonC2S, res: CommonS2C
+	ProtocolId_ServerHello   ProtocolId = 0
+	ProtocolId_Server2Client ProtocolId = 1
+	ProtocolId_Login         ProtocolId = 101 // req: LoginC2S, res: LoginS2C
+	ProtocolId_Common        ProtocolId = 102 // req: CommonC2S, res: CommonS2C
 )
 
 // Enum value maps for ProtocolId.
 var (
 	ProtocolId_name = map[int32]string{
 		0:   "ServerHello",
+		1:   "Server2Client",
 		101: "Login",
 		102: "Common",
 	}
 	ProtocolId_value = map[string]int32{
-		"ServerHello": 0,
-		"Login":       101,
-		"Common":      102,
+		"ServerHello":   0,
+		"Server2Client": 1,
+		"Login":         101,
+		"Common":        102,
 	}
 )
 
@@ -73,7 +76,7 @@ func (ProtocolId) EnumDescriptor() ([]byte, []int) {
 type ServerInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int32                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=Name,proto3" json:"Name,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=Type,proto3" json:"Type,omitempty"`
 	Address       string                 `protobuf:"bytes,3,opt,name=Address,proto3" json:"Address,omitempty"`
 	MsgHandlers   []int32                `protobuf:"varint,4,rep,packed,name=MsgHandlers,proto3" json:"MsgHandlers,omitempty"`
 	LocalConnUid  uint32                 `protobuf:"varint,5,opt,name=LocalConnUid,proto3" json:"LocalConnUid,omitempty"`
@@ -118,9 +121,9 @@ func (x *ServerInfo) GetId() int32 {
 	return 0
 }
 
-func (x *ServerInfo) GetName() string {
+func (x *ServerInfo) GetType() string {
 	if x != nil {
-		return x.Name
+		return x.Type
 	}
 	return ""
 }
@@ -382,7 +385,7 @@ const file_common_proto_rawDesc = "" +
 	"\n" +
 	"ServerInfo\x12\x0e\n" +
 	"\x02Id\x18\x01 \x01(\x05R\x02Id\x12\x12\n" +
-	"\x04Name\x18\x02 \x01(\tR\x04Name\x12\x18\n" +
+	"\x04Type\x18\x02 \x01(\tR\x04Type\x12\x18\n" +
 	"\aAddress\x18\x03 \x01(\tR\aAddress\x12 \n" +
 	"\vMsgHandlers\x18\x04 \x03(\x05R\vMsgHandlers\x12\"\n" +
 	"\fLocalConnUid\x18\x05 \x01(\rR\fLocalConnUid\"!\n" +
@@ -396,10 +399,11 @@ const file_common_proto_rawDesc = "" +
 	"\tCommonC2S\x12\x16\n" +
 	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\"!\n" +
 	"\tCommonS2C\x12\x14\n" +
-	"\x05Error\x18\x01 \x01(\x05R\x05Error*4\n" +
+	"\x05Error\x18\x01 \x01(\x05R\x05Error*G\n" +
 	"\n" +
 	"ProtocolId\x12\x0f\n" +
-	"\vServerHello\x10\x00\x12\t\n" +
+	"\vServerHello\x10\x00\x12\x11\n" +
+	"\rServer2Client\x10\x01\x12\t\n" +
 	"\x05Login\x10e\x12\n" +
 	"\n" +
 	"\x06Common\x10fB\x06Z\x04./pbb\x06proto3"

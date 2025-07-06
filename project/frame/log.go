@@ -117,7 +117,7 @@ func (r *Log) write(levelStr string, level LogLevel, params ...interface{}) {
 }
 
 func (r *Log) start() {
-	systemGo(func(stopCh chan struct{}) {
+	goForLogger(func(stopCh chan struct{}) {
 		defer func() {
 			// 处理剩余日志
 			for str := range r.writeChannel {
@@ -172,6 +172,9 @@ func (r *Log) start() {
 						r.recoverChannel <- fl
 					}
 				})
+
+			case <-stopCh:
+
 			}
 		}
 	})

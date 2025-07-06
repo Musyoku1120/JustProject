@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	MsgTimeoutSec  = 360         // 消息超时秒
+	MsgTimeoutSec  = 300         // 消息超时秒
 	MsgHeadSize    = 12          // 消息头长度
 	MsgBodySizeMax = 1024 * 1024 // 消息体上限
 )
 
 type MessageHead struct {
 	ProtoId pb.ProtocolId // 协议id int32
-	RoleId  uint32        // 玩家id
+	RoleId  int32         // 玩家id
 	Length  uint32        // 消息体长度（不含头）
 }
 
@@ -85,7 +85,7 @@ func (r *Message) Bytes() []byte {
 	return fullMsg
 }
 
-func NewBytesMsg(protoId pb.ProtocolId, roleId uint32, body []byte) *Message {
+func NewBytesMsg(protoId pb.ProtocolId, roleId int32, body []byte) *Message {
 	return &Message{
 		Head: &MessageHead{
 			ProtoId: protoId,
@@ -96,10 +96,18 @@ func NewBytesMsg(protoId pb.ProtocolId, roleId uint32, body []byte) *Message {
 	}
 }
 
-func NewProtoMsg(protoId pb.ProtocolId, roleId uint32, msg proto.Message) *Message {
+func NewProtoMsg(protoId pb.ProtocolId, roleId int32, msg proto.Message) *Message {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return nil
 	}
 	return NewBytesMsg(protoId, roleId, data)
+}
+
+func NewReplyMsg(roleId int32, msg proto.Message) *Message {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return nil
+	}
+	return NewBytesMsg(pb.ProtocolId_Server2Client, roleId, data)
 }

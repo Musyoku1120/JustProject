@@ -3,13 +3,14 @@ option go_package = "./pb";
 
 enum ProtocolId {
 	ServerHello = 0;
+	Server2Client = 1;
 	Login = 101; // req: LoginC2S, res: LoginS2C
 	Common = 102; // req: CommonC2S, res: CommonS2C
 }
 
 message ServerInfo {
 	int32 Id = 1;
-	string Name = 2;
+	string Type = 2;
 	string Address = 3;
 	repeated int32 MsgHandlers = 4;
 	uint32 LocalConnUid = 5;

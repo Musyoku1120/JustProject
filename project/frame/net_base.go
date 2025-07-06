@@ -43,7 +43,7 @@ func (r *msgQue) isTimeout(tick *time.Timer) bool {
 }
 
 func (r *msgQue) IsStop() bool {
-	if ServerEnd() {
+	if r.stopFlag == 0 && ServerEnd() {
 		r.Stop()
 	}
 	return r.stopFlag == 1
@@ -62,12 +62,13 @@ func (r *msgQue) processMsg(mq IMsgQue, msg *Message) (rp bool) {
 	rp = true
 	// 同步模式 收到消息即处理
 	TryIt(func() {
-		fun := r.handler.GetHandlerFunc(msg.Head.ProtoId)
-		if fun != nil {
-			rp = fun(mq, msg.Body)
-		} else {
-			rp = false
-		}
+		//fun := r.handler.GetHandlerFunc(msg.Head.ProtoId)
+		//if fun != nil {
+		//	rp = fun(msgQue, msg.Body)
+		//} else {
+		//	rp = false
+		//}
+		rp = r.handler.OnSolveMsg(mq, msg)
 	}, nil)
 	return rp
 }

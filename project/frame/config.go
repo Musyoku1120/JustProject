@@ -8,7 +8,7 @@ import (
 type ConfigGlobal struct {
 	UniqueId   int32    `yaml:"UniqueId"`
 	LogPath    string   `yaml:"LogPath"`
-	ServerName string   `yaml:"ServerName"`
+	ServerType string   `yaml:"ServerType"`
 	Address    string   `yaml:"Address"`
 	Servers    []string `yaml:"Servers"`
 }
