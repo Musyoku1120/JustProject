@@ -43,6 +43,6 @@ func Prt() {
 		RoleId: 101,
 	})
 
-	fmt.Println("login:", login.Bytes())
-	fmt.Println("common:", common.Bytes())
+	fmt.Println("login:", login.Bytes())   // 6500000065000000020000000865
+	fmt.Println("common:", common.Bytes()) // 6700000065000000020000000865
 }

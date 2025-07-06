@@ -28,7 +28,13 @@ type ProxyWs struct {
 }
 
 func (r *ProxyWs) Solve(msg *Message) {
-	r.cWrite <- msg.Bytes()
+	select {
+	case r.cWrite <- msg.Bytes():
+		LogDebug("ProxyWs write msg success")
+	default:
+		LogWarn("ProxyWs write msg failed")
+		r.cWrite <- msg.Bytes()
+	}
 }
 
 func (r *ProxyWs) ReadMsg() {
@@ -151,6 +157,11 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			}
 			if len(firstData) < MsgHeadSize {
 				LogError("StartProxy first message length err")
+				return false
+			}
+			head := &MessageHead{}
+			if err := head.Decode(firstData[:MsgHeadSize]); err != nil || head.ProtoId != pb.ProtocolId_Login {
+				LogError("StartProxy first message head err:%v", err)
 				return false
 			}
 			if decodeErr := proto.Unmarshal(firstData[MsgHeadSize:], loginC2S); decodeErr != nil {
