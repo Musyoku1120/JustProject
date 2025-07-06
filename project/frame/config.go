@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+var validServerTypes = map[string]struct{}{"auth": {}, "gate": {}, "game": {}}
+
 type ConfigGlobal struct {
 	UniqueId   int32    `yaml:"UniqueId"`
 	LogPath    string   `yaml:"LogPath"`
@@ -33,6 +35,11 @@ func InitConfig(globalPath string) {
 	err = yaml.Unmarshal(fileData, Global)
 	if err != nil {
 		LogError("parse file filed path:%v err:%v", fileData, err)
+		return
+	}
+
+	if _, ok := validServerTypes[Global.ServerType]; !ok {
+		LogError("invalid server type:%v", Global.ServerType)
 		return
 	}
 }
