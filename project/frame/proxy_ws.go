@@ -107,8 +107,8 @@ func (r *ProxyWs) WriteMsg() {
 
 func (r *ProxyWs) Close() {
 	_ = r.clientConn.Close()
-	r.ReadMsg()
-	r.WriteMsg()
+	close(r.cRead)
+	close(r.cWrite)
 	wsLock.Lock()
 	delete(wsMap, r.roleId)
 	defer wsLock.Unlock()
@@ -175,9 +175,6 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		proxy := GenWs(conn, loginC2S.RoleId)
-		defer proxy.Close()
-
 		// 转发消息到逻辑服
 		rpc := GetProtoService(int32(pb.ProtocolId_Login))
 		if rpc == nil {
@@ -187,6 +184,10 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 		rpc.Send(NewProtoMsg(pb.ProtocolId_Login, loginC2S.RoleId, loginC2S))
 
 		// 收发消息
+		proxy := GenWs(conn, loginC2S.RoleId)
+		proxy.ReadMsg()
+		proxy.WriteMsg()
+		defer proxy.Close()
 		for {
 			select {
 			case <-stopChForGo:
