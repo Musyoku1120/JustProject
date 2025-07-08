@@ -9,6 +9,7 @@ package pb
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -144,6 +145,128 @@ func (x *ServerInfo) GetMsgHandlers() []int32 {
 	return nil
 }
 
+// 客户端请求
+type ClientRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // 会话ID
+	MsgId         int32                  `protobuf:"varint,2,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`            // 消息ID
+	Payload       []byte                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`                      // 消息体
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClientRequest) Reset() {
+	*x = ClientRequest{}
+	mi := &file_common_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClientRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClientRequest) ProtoMessage() {}
+
+func (x *ClientRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClientRequest.ProtoReflect.Descriptor instead.
+func (*ClientRequest) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ClientRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *ClientRequest) GetMsgId() int32 {
+	if x != nil {
+		return x.MsgId
+	}
+	return 0
+}
+
+func (x *ClientRequest) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+// 服务器响应
+type ServerResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"` // 会话ID
+	MsgId         int32                  `protobuf:"varint,2,opt,name=msg_id,json=msgId,proto3" json:"msg_id,omitempty"`            // 消息ID
+	Payload       []byte                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`                      // 响应体
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ServerResponse) Reset() {
+	*x = ServerResponse{}
+	mi := &file_common_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServerResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServerResponse) ProtoMessage() {}
+
+func (x *ServerResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServerResponse.ProtoReflect.Descriptor instead.
+func (*ServerResponse) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ServerResponse) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *ServerResponse) GetMsgId() int32 {
+	if x != nil {
+		return x.MsgId
+	}
+	return 0
+}
+
+func (x *ServerResponse) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
 type LoginC2S struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RoleId        int32                  `protobuf:"varint,1,opt,name=RoleId,proto3" json:"RoleId,omitempty"`
@@ -153,7 +276,7 @@ type LoginC2S struct {
 
 func (x *LoginC2S) Reset() {
 	*x = LoginC2S{}
-	mi := &file_common_proto_msgTypes[1]
+	mi := &file_common_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -165,7 +288,7 @@ func (x *LoginC2S) String() string {
 func (*LoginC2S) ProtoMessage() {}
 
 func (x *LoginC2S) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[1]
+	mi := &file_common_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -178,7 +301,7 @@ func (x *LoginC2S) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginC2S.ProtoReflect.Descriptor instead.
 func (*LoginC2S) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{1}
+	return file_common_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *LoginC2S) GetRoleId() int32 {
@@ -198,7 +321,7 @@ type LoginS2C struct {
 
 func (x *LoginS2C) Reset() {
 	*x = LoginS2C{}
-	mi := &file_common_proto_msgTypes[2]
+	mi := &file_common_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -210,7 +333,7 @@ func (x *LoginS2C) String() string {
 func (*LoginS2C) ProtoMessage() {}
 
 func (x *LoginS2C) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[2]
+	mi := &file_common_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -223,7 +346,7 @@ func (x *LoginS2C) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginS2C.ProtoReflect.Descriptor instead.
 func (*LoginS2C) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{2}
+	return file_common_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *LoginS2C) GetError() int32 {
@@ -249,7 +372,7 @@ type LogoutC2S struct {
 
 func (x *LogoutC2S) Reset() {
 	*x = LogoutC2S{}
-	mi := &file_common_proto_msgTypes[3]
+	mi := &file_common_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -261,7 +384,7 @@ func (x *LogoutC2S) String() string {
 func (*LogoutC2S) ProtoMessage() {}
 
 func (x *LogoutC2S) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[3]
+	mi := &file_common_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -274,7 +397,7 @@ func (x *LogoutC2S) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutC2S.ProtoReflect.Descriptor instead.
 func (*LogoutC2S) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{3}
+	return file_common_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *LogoutC2S) GetRoleId() int32 {
@@ -293,7 +416,7 @@ type LogoutS2C struct {
 
 func (x *LogoutS2C) Reset() {
 	*x = LogoutS2C{}
-	mi := &file_common_proto_msgTypes[4]
+	mi := &file_common_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -305,7 +428,7 @@ func (x *LogoutS2C) String() string {
 func (*LogoutS2C) ProtoMessage() {}
 
 func (x *LogoutS2C) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[4]
+	mi := &file_common_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -318,7 +441,7 @@ func (x *LogoutS2C) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutS2C.ProtoReflect.Descriptor instead.
 func (*LogoutS2C) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{4}
+	return file_common_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LogoutS2C) GetError() int32 {
@@ -337,7 +460,7 @@ type CommonC2S struct {
 
 func (x *CommonC2S) Reset() {
 	*x = CommonC2S{}
-	mi := &file_common_proto_msgTypes[5]
+	mi := &file_common_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +472,7 @@ func (x *CommonC2S) String() string {
 func (*CommonC2S) ProtoMessage() {}
 
 func (x *CommonC2S) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[5]
+	mi := &file_common_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +485,7 @@ func (x *CommonC2S) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommonC2S.ProtoReflect.Descriptor instead.
 func (*CommonC2S) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{5}
+	return file_common_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CommonC2S) GetRoleId() int32 {
@@ -381,7 +504,7 @@ type CommonS2C struct {
 
 func (x *CommonS2C) Reset() {
 	*x = CommonS2C{}
-	mi := &file_common_proto_msgTypes[6]
+	mi := &file_common_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -393,7 +516,7 @@ func (x *CommonS2C) String() string {
 func (*CommonS2C) ProtoMessage() {}
 
 func (x *CommonS2C) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[6]
+	mi := &file_common_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -406,7 +529,7 @@ func (x *CommonS2C) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommonS2C.ProtoReflect.Descriptor instead.
 func (*CommonS2C) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{6}
+	return file_common_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CommonS2C) GetError() int32 {
@@ -425,7 +548,7 @@ type ErrorHint struct {
 
 func (x *ErrorHint) Reset() {
 	*x = ErrorHint{}
-	mi := &file_common_proto_msgTypes[7]
+	mi := &file_common_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -437,7 +560,7 @@ func (x *ErrorHint) String() string {
 func (*ErrorHint) ProtoMessage() {}
 
 func (x *ErrorHint) ProtoReflect() protoreflect.Message {
-	mi := &file_common_proto_msgTypes[7]
+	mi := &file_common_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -450,7 +573,7 @@ func (x *ErrorHint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ErrorHint.ProtoReflect.Descriptor instead.
 func (*ErrorHint) Descriptor() ([]byte, []int) {
-	return file_common_proto_rawDescGZIP(), []int{7}
+	return file_common_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ErrorHint) GetHint() string {
@@ -464,13 +587,23 @@ var File_common_proto protoreflect.FileDescriptor
 
 const file_common_proto_rawDesc = "" +
 	"\n" +
-	"\fcommon.proto\"l\n" +
+	"\fcommon.proto\x1a\x1bgoogle/protobuf/empty.proto\"l\n" +
 	"\n" +
 	"ServerInfo\x12\x0e\n" +
 	"\x02Id\x18\x01 \x01(\x05R\x02Id\x12\x12\n" +
 	"\x04Type\x18\x02 \x01(\tR\x04Type\x12\x18\n" +
 	"\aAddress\x18\x03 \x01(\tR\aAddress\x12 \n" +
-	"\vMsgHandlers\x18\x04 \x03(\x05R\vMsgHandlers\"\"\n" +
+	"\vMsgHandlers\x18\x04 \x03(\x05R\vMsgHandlers\"_\n" +
+	"\rClientRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
+	"\x06msg_id\x18\x02 \x01(\x05R\x05msgId\x12\x18\n" +
+	"\apayload\x18\x03 \x01(\fR\apayload\"`\n" +
+	"\x0eServerResponse\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
+	"\x06msg_id\x18\x02 \x01(\x05R\x05msgId\x12\x18\n" +
+	"\apayload\x18\x03 \x01(\fR\apayload\"\"\n" +
 	"\bLoginC2S\x12\x16\n" +
 	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\"4\n" +
 	"\bLoginS2C\x12\x14\n" +
@@ -494,7 +627,16 @@ const file_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06Logout\x10f\x12\n" +
 	"\n" +
-	"\x06Common\x10gB\x06Z\x04./pbb\x06proto3"
+	"\x06Common\x10g2D\n" +
+	"\x0fRegistryService\x121\n" +
+	"\n" +
+	"HelloShake\x12\v.ServerInfo\x1a\x16.google.protobuf.Empty2N\n" +
+	"\x14HeartBeatPingService\x126\n" +
+	"\x04Ping\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty2B\n" +
+	"\x0eMessageService\x120\n" +
+	"\rHandleMessage\x12\x0e.ClientRequest\x1a\x0f.ServerResponse2H\n" +
+	"\rNotifyService\x127\n" +
+	"\rNotifyMessage\x12\x0e.ClientRequest\x1a\x16.google.protobuf.EmptyB\x06Z\x04./pbb\x06proto3"
 
 var (
 	file_common_proto_rawDescOnce sync.Once
@@ -509,24 +651,35 @@ func file_common_proto_rawDescGZIP() []byte {
 }
 
 var file_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_common_proto_goTypes = []any{
-	(ProtocolId)(0),    // 0: ProtocolId
-	(*ServerInfo)(nil), // 1: ServerInfo
-	(*LoginC2S)(nil),   // 2: LoginC2S
-	(*LoginS2C)(nil),   // 3: LoginS2C
-	(*LogoutC2S)(nil),  // 4: LogoutC2S
-	(*LogoutS2C)(nil),  // 5: LogoutS2C
-	(*CommonC2S)(nil),  // 6: CommonC2S
-	(*CommonS2C)(nil),  // 7: CommonS2C
-	(*ErrorHint)(nil),  // 8: ErrorHint
+	(ProtocolId)(0),        // 0: ProtocolId
+	(*ServerInfo)(nil),     // 1: ServerInfo
+	(*ClientRequest)(nil),  // 2: ClientRequest
+	(*ServerResponse)(nil), // 3: ServerResponse
+	(*LoginC2S)(nil),       // 4: LoginC2S
+	(*LoginS2C)(nil),       // 5: LoginS2C
+	(*LogoutC2S)(nil),      // 6: LogoutC2S
+	(*LogoutS2C)(nil),      // 7: LogoutS2C
+	(*CommonC2S)(nil),      // 8: CommonC2S
+	(*CommonS2C)(nil),      // 9: CommonS2C
+	(*ErrorHint)(nil),      // 10: ErrorHint
+	(*emptypb.Empty)(nil),  // 11: google.protobuf.Empty
 }
 var file_common_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1,  // 0: RegistryService.HelloShake:input_type -> ServerInfo
+	11, // 1: HeartBeatPingService.Ping:input_type -> google.protobuf.Empty
+	2,  // 2: MessageService.HandleMessage:input_type -> ClientRequest
+	2,  // 3: NotifyService.NotifyMessage:input_type -> ClientRequest
+	11, // 4: RegistryService.HelloShake:output_type -> google.protobuf.Empty
+	11, // 5: HeartBeatPingService.Ping:output_type -> google.protobuf.Empty
+	3,  // 6: MessageService.HandleMessage:output_type -> ServerResponse
+	11, // 7: NotifyService.NotifyMessage:output_type -> google.protobuf.Empty
+	4,  // [4:8] is the sub-list for method output_type
+	0,  // [0:4] is the sub-list for method input_type
+	0,  // [0:0] is the sub-list for extension type_name
+	0,  // [0:0] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_common_proto_init() }
@@ -540,9 +693,9 @@ func file_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_proto_rawDesc), len(file_common_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   4,
 		},
 		GoTypes:           file_common_proto_goTypes,
 		DependencyIndexes: file_common_proto_depIdxs,

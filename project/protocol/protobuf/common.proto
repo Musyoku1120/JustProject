@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "google/protobuf/empty.proto";
 option go_package = "./pb";
 
 enum ProtocolId {
@@ -14,6 +15,40 @@ message ServerInfo {
 	string Type = 2;
 	string Address = 3;
 	repeated int32 MsgHandlers = 4;
+}
+
+// 客户端请求
+message ClientRequest {
+	string session_id = 1;      // 会话ID
+	int32 msg_id = 2;           // 消息ID
+	bytes payload = 3;          // 消息体
+}
+
+// 服务器响应
+message ServerResponse {
+	string session_id = 1;      // 会话ID
+	int32 msg_id = 2;           // 消息ID
+	bytes payload = 3;          // 响应体
+}
+
+// 服务注册握手
+service RegistryService {
+	rpc HelloShake(ServerInfo) returns (google.protobuf.Empty);
+}
+
+// 心跳判活
+service HeartBeatPingService {
+	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+// 消息处理接口
+service MessageService {
+	rpc HandleMessage(ClientRequest) returns (ServerResponse);
+}
+
+// 消息通知接口
+service NotifyService {
+	rpc NotifyMessage(ClientRequest) returns (google.protobuf.Empty);
 }
 
 message LoginC2S {
