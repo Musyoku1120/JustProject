@@ -2,4 +2,4 @@ UniqueId: 3001
 LogPath: D:/ServerLog/server.log
 ServerType: game
 Address: 127.0.0.1:3120
-Servers: []
+ServerAddr: []

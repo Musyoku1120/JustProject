@@ -22,7 +22,7 @@ type ConfigGlobal struct {
 	LogPath    string   `yaml:"LogPath"`
 	ServerType string   `yaml:"ServerType"`
 	Address    string   `yaml:"Address"`
-	Servers    []string `yaml:"Servers"`
+	ServerAddr []string `yaml:"ServerAddr"`
 }
 
 func ReadFile(path string) ([]byte, error) {

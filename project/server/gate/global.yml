@@ -2,4 +2,4 @@ UniqueId: 2001
 LogPath: D:/ServerLog/server.log
 ServerType: gate
 Address: 127.0.0.1:2120
-Servers: ["127.0.0.1:3120"]
+ServerAddr: ["127.0.0.1:3120"]

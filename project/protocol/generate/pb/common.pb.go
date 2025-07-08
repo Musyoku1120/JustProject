@@ -81,7 +81,7 @@ type ServerInfo struct {
 	Id            int32                  `protobuf:"varint,1,opt,name=Id,proto3" json:"Id,omitempty"`
 	Type          string                 `protobuf:"bytes,2,opt,name=Type,proto3" json:"Type,omitempty"`
 	Address       string                 `protobuf:"bytes,3,opt,name=Address,proto3" json:"Address,omitempty"`
-	MsgHandlers   []int32                `protobuf:"varint,4,rep,packed,name=MsgHandlers,proto3" json:"MsgHandlers,omitempty"`
+	Services      []int32                `protobuf:"varint,4,rep,packed,name=Services,proto3" json:"Services,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -137,9 +137,9 @@ func (x *ServerInfo) GetAddress() string {
 	return ""
 }
 
-func (x *ServerInfo) GetMsgHandlers() []int32 {
+func (x *ServerInfo) GetServices() []int32 {
 	if x != nil {
-		return x.MsgHandlers
+		return x.Services
 	}
 	return nil
 }
@@ -464,13 +464,13 @@ var File_common_proto protoreflect.FileDescriptor
 
 const file_common_proto_rawDesc = "" +
 	"\n" +
-	"\fcommon.proto\"l\n" +
+	"\fcommon.proto\"f\n" +
 	"\n" +
 	"ServerInfo\x12\x0e\n" +
 	"\x02Id\x18\x01 \x01(\x05R\x02Id\x12\x12\n" +
 	"\x04Type\x18\x02 \x01(\tR\x04Type\x12\x18\n" +
-	"\aAddress\x18\x03 \x01(\tR\aAddress\x12 \n" +
-	"\vMsgHandlers\x18\x04 \x03(\x05R\vMsgHandlers\"\"\n" +
+	"\aAddress\x18\x03 \x01(\tR\aAddress\x12\x1a\n" +
+	"\bServices\x18\x04 \x03(\x05R\bServices\"\"\n" +
 	"\bLoginC2S\x12\x16\n" +
 	"\x06RoleId\x18\x01 \x01(\x05R\x06RoleId\"4\n" +
 	"\bLoginS2C\x12\x14\n" +

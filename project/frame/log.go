@@ -154,7 +154,7 @@ func (r *Log) start() {
 				fl.file = nil
 
 				// 轮换新文件名
-				newPath := fl.dictionaryName + "/" + fl.fileName + GenLogFileName() + fl.extensionName
+				newPath := fl.dictionaryName + "/" + fl.fileName + GenLogFileName() + "_" + fl.extensionName
 				_ = os.Rename(fl.Path, newPath)
 				file, err := os.OpenFile(fl.Path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 				if err == nil {

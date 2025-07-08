@@ -7,24 +7,29 @@ import (
 	"time"
 )
 
+type rpcServer struct {
+	msqQue  IMsgQue
+	payload int32
+	*pb.ServerInfo
+}
+
 var (
-	allLock      = sync.RWMutex{}
-	rpcAddr2Mid  = make(map[string]uint32)             // 连接字典
-	rpcAddr2Info = make(map[string]*pb.ServerInfo)     // 服务信息
-	rpcPid2Addr  = make(map[int32]map[string]struct{}) // 处理路由
+	allLock   = sync.RWMutex{}
+	linkCheck = make(map[string]uint32)
+	pidServes = make(map[int32]map[string]*rpcServer)
 )
 
 func GetProtoService(pid int32) IMsgQue {
 	allLock.RLock()
 	defer allLock.RUnlock()
 
-	set, ok := rpcPid2Addr[pid]
+	set, ok := pidServes[pid]
 	if !ok {
 		return nil
 	}
-	for addr := range set {
-		if mid, ok := rpcAddr2Mid[addr]; ok && MsgQueAvailable(mid) {
-			return GetMsgQue(mid)
+	for _, service := range set {
+		if MsgQueAvailable(service.msqQue.GetUid()) {
+			return service.msqQue
 		}
 	}
 	return nil
@@ -51,9 +56,9 @@ func InitRPC() {
 }
 
 func connectServers() {
-	for _, address := range Global.Servers {
+	for _, address := range Global.ServerAddr {
 		allLock.RLock()
-		mid, ok := rpcAddr2Mid[address]
+		mid, ok := linkCheck[address]
 		allLock.RUnlock()
 
 		if ok && MsgQueAvailable(mid) {
@@ -71,27 +76,27 @@ func SendServerHello(mq IMsgQue) {
 	}
 
 	for id := range DefaultMsgHandler.id2Handler {
-		serverHello.MsgHandlers = append(serverHello.MsgHandlers, id)
+		serverHello.Services = append(serverHello.Services, id)
 	}
 	mq.Send(NewProtoMsg(pb.ProtocolId_ServerHello, 0, serverHello))
 }
 
 func HandlerServerHello(mq IMsgQue, body []byte) bool {
-	serverHello := &pb.ServerInfo{}
-	if err := proto.Unmarshal(body, serverHello); err != nil {
+	serverInfo := &pb.ServerInfo{}
+	if err := proto.Unmarshal(body, serverInfo); err != nil {
 		return false
 	}
 
 	allLock.Lock()
 	defer allLock.Unlock()
 
-	rpcAddr2Mid[serverHello.Address] = mq.GetUid()
-	rpcAddr2Info[serverHello.Address] = serverHello
-	for _, pid := range serverHello.MsgHandlers {
-		if _, ok := rpcPid2Addr[pid]; !ok {
-			rpcPid2Addr[pid] = make(map[string]struct{})
+	linkCheck[serverInfo.Address] = mq.GetUid()
+	service := &rpcServer{msqQue: mq, ServerInfo: serverInfo}
+	for _, pid := range service.Services {
+		if _, ok := pidServes[pid]; !ok {
+			pidServes[pid] = make(map[string]*rpcServer)
 		}
-		rpcPid2Addr[pid][serverHello.Address] = struct{}{}
+		pidServes[pid][serverInfo.Address] = service
 	}
 	return true
 }
