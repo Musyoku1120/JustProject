@@ -1,8 +1,11 @@
 package frame
 
 import (
+	"fmt"
 	"google.golang.org/protobuf/proto"
 	"server/protocol/generate/pb"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -14,20 +17,21 @@ type rpcServer struct {
 }
 
 var (
-	allLock   = sync.RWMutex{}
-	linkCheck = make(map[string]uint32)
-	pidServes = make(map[int32]map[string]*rpcServer)
+	allLock    = sync.RWMutex{}
+	linkCheck  = make(map[string]uint32)
+	pidServe   = make(map[int32]string)
+	typeServes = make(map[string]map[int32]*rpcServer)
 )
 
 func GetProtoService(pid int32) IMsgQue {
 	allLock.RLock()
 	defer allLock.RUnlock()
 
-	set, ok := pidServes[pid]
+	serveType, ok := pidServe[pid]
 	if !ok {
 		return nil
 	}
-	for _, service := range set {
+	for _, service := range typeServes[serveType] {
 		if MsgQueAvailable(service.msqQue.GetUid()) {
 			return service.msqQue
 		}
@@ -36,9 +40,27 @@ func GetProtoService(pid int32) IMsgQue {
 }
 
 func InitRPC() {
-	if err := TcpListen(Global.Address, DefaultMsgHandler); err != nil {
-		LogError("InitRPC TcpListen Failed Err: %v", err)
-		return
+	if RedisEnable {
+		listenStart := false
+		addr := strings.Split(Global.Address, ":")
+		for port, _ := strconv.Atoi(addr[1]); port < 65535; port++ {
+			err := TcpListen(fmt.Sprintf("%v:%v", addr[0], port), DefaultMsgHandler)
+			if err == nil {
+				listenStart = true
+				Global.Address = fmt.Sprintf("%v:%v", addr[0], port)
+				break
+			}
+		}
+		if !listenStart {
+			LogError("InitRPC TcpListen By Port Traverse Failed")
+			return
+		}
+
+	} else {
+		if err := TcpListen(Global.Address, DefaultMsgHandler); err != nil {
+			LogError("InitRPC TcpListen Failed Err: %v", err)
+			return
+		}
 	}
 
 	connectServers()
@@ -47,6 +69,9 @@ func InitRPC() {
 		for {
 			select {
 			case <-stopChForGo:
+				if RedisEnable {
+					deleteServerInfo()
+				}
 				return
 			case <-ticker.C:
 				connectServers()
@@ -55,30 +80,92 @@ func InitRPC() {
 	})
 }
 
-func connectServers() {
-	for _, address := range Global.ServerAddr {
-		allLock.RLock()
-		mid, ok := linkCheck[address]
-		allLock.RUnlock()
+func deleteServerInfo() {
+	GlobalRedis.HDel(GlobalRedis.ctx, "server.info", fmt.Sprintf("%v", Global.UniqueId))
+}
 
-		if ok && MsgQueAvailable(mid) {
+func connectServers() {
+	if RedisEnable {
+		uploadServerInfo()
+		servers := lookupServers()
+		if Global.ServerType != ServerTypeGate {
+			return // gate try to connect others
+		}
+		for _, server := range servers {
+			if server.Type == ServerTypeGate {
+				continue
+			}
+			allLock.RLock()
+			mid, ok := linkCheck[server.Address]
+			allLock.RUnlock()
+
+			if ok && MsgQueAvailable(mid) {
+				continue
+			}
+			LaunchConnect("tcp", server.Address, DefaultMsgHandler, 0)
+		}
+
+	} else {
+		for _, address := range Global.ServerAddr {
+			allLock.RLock()
+			mid, ok := linkCheck[address]
+			allLock.RUnlock()
+
+			if ok && MsgQueAvailable(mid) {
+				continue
+			}
+			LaunchConnect("tcp", address, DefaultMsgHandler, 0)
+		}
+	}
+}
+
+func lookupServers() []*pb.ServerInfo {
+	serverStr, err := GlobalRedis.HVals(GlobalRedis.ctx, "server.info").Result()
+	if err != nil {
+		LogError("lookupServers HVals Failed Err: %v", err)
+		return nil
+	}
+	var servers []*pb.ServerInfo
+	for _, str := range serverStr {
+		tmp := &pb.ServerInfo{}
+		if err := proto.Unmarshal([]byte(str), tmp); err != nil {
+			LogError("lookupServers Unmarshal Failed Err: %v", err)
 			continue
 		}
-		LaunchConnect("tcp", address, DefaultMsgHandler, 0)
+		servers = append(servers, tmp)
+	}
+	return servers
+}
+
+func uploadServerInfo() {
+	serverInfo := &pb.ServerInfo{
+		Id:      Global.UniqueId,
+		Type:    Global.ServerType,
+		Address: Global.Address,
+	}
+	data, err := proto.Marshal(serverInfo)
+	if err != nil {
+		LogError("uploadServerInfo Marshal Failed Err: %v", err)
+		return
+	}
+	_, err = GlobalRedis.HSet(GlobalRedis.ctx, "server.info", fmt.Sprintf("%v", serverInfo.Id), data).Result()
+	if err != nil {
+		LogError("uploadServerInfo HSet Failed Err: %v", err)
+		return
 	}
 }
 
 func SendServerHello(mq IMsgQue) {
-	serverHello := &pb.ServerInfo{
+	serverInfo := &pb.ServerInfo{
 		Id:      Global.UniqueId,
 		Type:    Global.ServerType,
 		Address: Global.Address,
 	}
 
 	for id := range DefaultMsgHandler.id2Handler {
-		serverHello.Services = append(serverHello.Services, id)
+		serverInfo.Services = append(serverInfo.Services, id)
 	}
-	mq.Send(NewProtoMsg(pb.ProtocolId_ServerHello, 0, serverHello))
+	mq.Send(NewProtoMsg(pb.ProtocolId_ServerHello, 0, serverInfo))
 }
 
 func HandlerServerHello(mq IMsgQue, body []byte) bool {
@@ -91,12 +178,15 @@ func HandlerServerHello(mq IMsgQue, body []byte) bool {
 	defer allLock.Unlock()
 
 	linkCheck[serverInfo.Address] = mq.GetUid()
-	service := &rpcServer{msqQue: mq, ServerInfo: serverInfo}
-	for _, pid := range service.Services {
-		if _, ok := pidServes[pid]; !ok {
-			pidServes[pid] = make(map[string]*rpcServer)
-		}
-		pidServes[pid][serverInfo.Address] = service
+	if _, ok := typeServes[serverInfo.Type]; !ok {
+		typeServes[serverInfo.Type] = make(map[int32]*rpcServer)
+	}
+	typeServes[serverInfo.Type][serverInfo.Id] = &rpcServer{
+		msqQue:     mq,
+		ServerInfo: serverInfo,
+	}
+	for _, pid := range serverInfo.Services {
+		pidServe[pid] = serverInfo.Type
 	}
 	return true
 }

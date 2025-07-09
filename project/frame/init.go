@@ -38,6 +38,9 @@ var Global *ConfigGlobal
 var defaultLogger *Log
 var DefaultMsgHandler *MsgHandler
 
+var GlobalRedis *RedisManager // 服务发现 消息广播
+var RedisEnable bool
+
 func ServerEnd() bool {
 	return globalStop == 1
 }
@@ -73,6 +76,15 @@ func WaitForExit() {
 func InitBase() {
 	defaultLogger = NewLog(10240, &ConsoleLogger{}, &FileLogger{Path: Global.LogPath})
 	defaultLogger.SetLevel(LogLevelError)
+
+	var err error
+	GlobalRedis, err = NewRedisManager("127.0.0.1:9999@")
+	if err != nil {
+		LogPanic("Create RedisManager Failed, Err: %v", err)
+		RedisEnable = false
+	} else {
+		RedisEnable = true
+	}
 
 	DefaultMsgHandler = NewMsgHandler()
 	DefaultMsgHandler.RegisterHandler(int32(pb.ProtocolId_ServerHello), HandlerServerHello)

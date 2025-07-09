@@ -49,6 +49,7 @@ func (r *MsgHandler) OnSolveMsg(mq IMsgQue, msg *Message) bool {
 	case ServerTypeGame:
 		fun := r.GetHandlerFunc(msg.Head.ProtoId)
 		if fun == nil {
+			// TODO RPC
 			LogError("handler not found, protoId=%d", msg.Head.ProtoId)
 			mq.Send(NewReplyMsg(msg.Head.RoleId, &pb.ErrorHint{Hint: "handler not found"}))
 			return false

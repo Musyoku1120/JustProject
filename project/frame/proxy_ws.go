@@ -22,9 +22,10 @@ var (
 type ProxyWs struct {
 	roleId int32
 
-	clientConn *websocket.Conn
-	cRead      chan []byte // c2s
-	cWrite     chan []byte // s2c
+	clientConn  *websocket.Conn
+	logicMsgQue IMsgQue
+	cRead       chan []byte // c2s
+	cWrite      chan []byte // s2c
 }
 
 func (r *ProxyWs) Solve(msg *Message) {
@@ -65,13 +66,7 @@ func (r *ProxyWs) ReadMsg() {
 				}
 
 				// 转发到逻辑服
-				rpc := GetProtoService(int32(head.ProtoId))
-				if rpc == nil {
-					LogError("get proto[%v] service fail", head.ProtoId)
-					rpc.Send(NewReplyMsg(r.roleId, &pb.ErrorHint{Hint: "service not found"}))
-					continue
-				}
-				rpc.Send(NewBytesMsg(head.ProtoId, head.RoleId, data[MsgHeadSize:]))
+				r.logicMsgQue.Send(NewBytesMsg(head.ProtoId, head.RoleId, data[MsgHeadSize:]))
 			}
 		}
 	})
@@ -175,6 +170,12 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 
+		// 收发消息
+		proxy := GenWs(conn, loginC2S.RoleId)
+		proxy.ReadMsg()
+		proxy.WriteMsg()
+		defer proxy.Close()
+
 		// 转发消息到逻辑服
 		rpc := GetProtoService(int32(pb.ProtocolId_Login))
 		if rpc == nil {
@@ -182,12 +183,8 @@ func StartProxy(writer http.ResponseWriter, request *http.Request) {
 			return
 		}
 		rpc.Send(NewProtoMsg(pb.ProtocolId_Login, loginC2S.RoleId, loginC2S))
+		proxy.logicMsgQue = rpc
 
-		// 收发消息
-		proxy := GenWs(conn, loginC2S.RoleId)
-		proxy.ReadMsg()
-		proxy.WriteMsg()
-		defer proxy.Close()
 		for {
 			select {
 			case <-stopChForGo:

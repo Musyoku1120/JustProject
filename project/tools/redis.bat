@@ -1,0 +1,1 @@
+cd Redis-x64-5.0.14 && redis-server server_redis.conf
