@@ -29,7 +29,8 @@ func (r *wsMsgQue) read() {
 			break
 		}
 		if !r.processMsg(r, &Message{Body: data}) {
-			break
+			LogWarn("server[%v] process[%v] failed", Global.UniqueId)
+			//break // keep connect
 		}
 		r.lastTick = TimeStamp
 	}

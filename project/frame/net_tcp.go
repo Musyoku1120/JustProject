@@ -57,7 +57,7 @@ func (r *tcpMsqQue) read() {
 		LogDebug("receive body:%v", body)
 		if !r.processMsg(r, &Message{Head: head, Body: body}) {
 			LogWarn("server[%v] process[%v] failed", Global.UniqueId, head.ProtoId)
-			break
+			//break // keep connect
 		}
 		head, body = nil, nil
 		r.lastTick = TimeStamp

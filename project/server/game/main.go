@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"server/frame"
+	"server/protocol/generate"
 	"server/protocol/generate/pb"
-	"server/server/tool"
 )
 
 func main() {
@@ -14,6 +14,7 @@ func main() {
 
 	frame.InitConfig(configPath)
 	frame.InitBase()
+
 	InitHandler()
 	frame.InitRPC()
 
@@ -21,8 +22,8 @@ func main() {
 }
 
 func InitHandler() {
-	frame.DefaultMsgHandler.RegisterHandlers(server.CSHandlerMap) // CSHandlerObj Need Register
-	server.CSHandlerObj.HandlerLogin = func(mq frame.IMsgQue, req *pb.LoginC2S) error {
+	frame.DefaultMsgHandler.RegisterHandlers(generate.CSHandlerMap) // CSHandlerObj Need Register
+	generate.CSHandlerObj.HandlerLogin = func(mq frame.IMsgQue, req *pb.LoginC2S) error {
 		frame.LogInfo("handler login")
 		mq.Send(frame.NewReplyMsg(req.RoleId, &pb.LoginS2C{
 			Error: 0,
@@ -30,7 +31,7 @@ func InitHandler() {
 		}))
 		return nil
 	}
-	server.CSHandlerObj.HandlerCommon = func(mq frame.IMsgQue, req *pb.CommonC2S) error {
+	generate.CSHandlerObj.HandlerCommon = func(mq frame.IMsgQue, req *pb.CommonC2S) error {
 		frame.LogInfo("handler common")
 		mq.Send(frame.NewReplyMsg(req.RoleId, &pb.CommonS2C{
 			Error: 0,
