@@ -40,41 +40,31 @@ func GetProtoService(pid int32) IMsgQue {
 }
 
 func InitRPC() {
-	if RedisEnable {
-		listenStart := false
-		addr := strings.Split(Global.Address, ":")
-		for port, _ := strconv.Atoi(addr[1]); port < 65535; port++ {
-			err := TcpListen(fmt.Sprintf("%v:%v", addr[0], port), DefaultMsgHandler)
-			if err == nil {
-				listenStart = true
-				Global.Address = fmt.Sprintf("%v:%v", addr[0], port)
-				break
-			}
-		}
-		if !listenStart {
-			LogError("InitRPC TcpListen By Port Traverse Failed")
-			return
-		}
-
-	} else {
-		if err := TcpListen(Global.Address, DefaultMsgHandler); err != nil {
-			LogError("InitRPC TcpListen Failed Err: %v", err)
-			return
+	listenStart := false
+	addr := strings.Split(Global.Address, ":")
+	for port, _ := strconv.Atoi(addr[1]); port < 65535; port++ {
+		err := TcpListen(fmt.Sprintf("%v:%v", addr[0], port), DefaultMsgHandler)
+		if err == nil {
+			listenStart = true
+			Global.Address = fmt.Sprintf("%v:%v", addr[0], port)
+			break
 		}
 	}
+	if !listenStart {
+		LogError("InitRPC TcpListen By Port Traverse Failed")
+		return
+	}
 
-	connectServers()
+	tryConnectServers()
 	ticker := time.NewTicker(time.Second * 1)
 	Gogo(func() {
 		for {
 			select {
 			case <-stopChForGo:
-				if RedisEnable {
-					deleteServerInfo()
-				}
+				deleteServerInfo()
 				return
 			case <-ticker.C:
-				connectServers()
+				tryConnectServers()
 			}
 		}
 	})
@@ -84,38 +74,29 @@ func deleteServerInfo() {
 	GlobalRedis.HDel(GlobalRedis.ctx, "server.info", fmt.Sprintf("%v", Global.UniqueId))
 }
 
-func connectServers() {
-	if RedisEnable {
-		uploadServerInfo()
-		servers := lookupServers()
-		if Global.ServerType != ServerTypeGate {
-			return // gate try to connect others
+func tryConnectServers() {
+	uploadServerInfo()
+	servers := lookupServers()
+	for _, server := range servers {
+		needLink := false
+		for _, link := range Global.ServerLinks {
+			if link == server.Type {
+				needLink = true
+				break
+			}
 		}
-		for _, server := range servers {
-			if server.Type == ServerTypeGate {
-				continue
-			}
-			allLock.RLock()
-			mid, ok := linkCheck[server.Address]
-			allLock.RUnlock()
-
-			if ok && MsgQueAvailable(mid) {
-				continue
-			}
-			LaunchConnect("tcp", server.Address, DefaultMsgHandler, 0)
+		if !needLink {
+			continue
 		}
 
-	} else {
-		for _, address := range Global.ServerAddr {
-			allLock.RLock()
-			mid, ok := linkCheck[address]
-			allLock.RUnlock()
+		allLock.RLock()
+		mid, ok := linkCheck[server.Address]
+		allLock.RUnlock()
 
-			if ok && MsgQueAvailable(mid) {
-				continue
-			}
-			LaunchConnect("tcp", address, DefaultMsgHandler, 0)
+		if ok && MsgQueAvailable(mid) {
+			continue
 		}
+		LaunchConnect("tcp", server.Address, DefaultMsgHandler, 0)
 	}
 }
 

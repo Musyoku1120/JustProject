@@ -1,5 +1,5 @@
-UniqueId: 2001
+UId: 2001
 LogPath: D:/ServerLog/server.log
-ServerType: gate
 Address: 127.0.0.1:2120
-ServerAddr: ["127.0.0.1:3120"]
+Type: gate
+Links: ["game"]

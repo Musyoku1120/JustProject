@@ -1,5 +1,5 @@
-UniqueId: 3001
+UId: 3001
 LogPath: D:/ServerLog/server.log
-ServerType: game
 Address: 127.0.0.1:3120
-ServerAddr: []
+Type: game
+Links: []

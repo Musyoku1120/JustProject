@@ -37,23 +37,6 @@ func NewRedisManager(configStr string) (*RedisManager, error) {
 	return &RedisManager{Client: client, ctx: ctx}, nil
 }
 
-// Lua脚本支持 -------------------------------------------------
-
-// EvalScript 执行Lua脚本
-func (m *RedisManager) EvalScript(script string, keys []string, args ...interface{}) (interface{}, error) {
-	return m.Client.Eval(m.ctx, script, keys, args...).Result()
-}
-
-// LoadScript 加载脚本到Redis并返回SHA
-func (m *RedisManager) LoadScript(script string) (string, error) {
-	return m.Client.ScriptLoad(m.ctx, script).Result()
-}
-
-// EvalSHA 使用SHA执行已加载的脚本
-func (m *RedisManager) EvalSHA(sha string, keys []string, args ...interface{}) (interface{}, error) {
-	return m.Client.EvalSha(m.ctx, sha, keys, args...).Result()
-}
-
 // Subscribe 订阅单个频道
 func (m *RedisManager) Subscribe(channel string, handler PubSubHandler) (func() error, error) {
 	pubSub := m.Client.Subscribe(m.ctx, channel)

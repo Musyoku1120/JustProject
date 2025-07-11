@@ -18,11 +18,11 @@ var (
 )
 
 type ConfigGlobal struct {
-	UniqueId   int32    `yaml:"UniqueId"`
-	LogPath    string   `yaml:"LogPath"`
-	ServerType string   `yaml:"ServerType"`
-	Address    string   `yaml:"Address"`
-	ServerAddr []string `yaml:"ServerAddr"`
+	UniqueId    int32    `yaml:"UId"`
+	LogPath     string   `yaml:"LogPath"`
+	Address     string   `yaml:"Address"`
+	ServerType  string   `yaml:"Type"`
+	ServerLinks []string `yaml:"Links"`
 }
 
 func ReadFile(path string) ([]byte, error) {
