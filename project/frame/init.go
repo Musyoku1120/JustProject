@@ -39,7 +39,6 @@ var defaultLogger *Log
 var DefaultMsgHandler *MsgHandler
 
 var GlobalRedis *RedisManager // 服务发现 消息广播
-var RedisEnable bool
 
 func ServerEnd() bool {
 	return globalStop == 1
@@ -81,9 +80,7 @@ func InitBase() {
 	GlobalRedis, err = NewRedisManager("127.0.0.1:9999@")
 	if err != nil {
 		LogPanic("Create RedisManager Failed, Err: %v", err)
-		RedisEnable = false
-	} else {
-		RedisEnable = true
+		return
 	}
 
 	DefaultMsgHandler = NewMsgHandler()
